@@ -1,0 +1,27 @@
+{
+  "name": "fairgo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "FAIRGO - Fair-pricing ride-hailing platform for Thailand",
+  "scripts": {
+    "dev:api": "pnpm --filter @fairgo/api dev",
+    "dev:admin": "pnpm --filter @fairgo/admin-web dev",
+    "build:api": "pnpm --filter @fairgo/api build",
+    "build:admin": "pnpm --filter @fairgo/admin-web build",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "db:generate": "pnpm --filter @fairgo/api db:generate",
+    "db:migrate": "pnpm --filter @fairgo/api db:migrate",
+    "db:seed": "pnpm --filter @fairgo/api db:seed",
+    "db:push": "pnpm --filter @fairgo/api db:push",
+    "clean": "turbo run clean"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0"
+  },
+  "packageManager": "pnpm@9.15.1",
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
