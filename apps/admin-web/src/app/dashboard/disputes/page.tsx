@@ -1,92 +1,239 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { apiFetch } from "@/lib/api";
+import { getToken } from "@/lib/auth";
 
-const DISPUTES = [
-  { id: "D001", tripId: "T1234", category: "overcharge", passenger: "สมหญิง ดีใจ", driver: "วิชัย ขับดี", amount: 350, status: "OPEN", createdAt: "2025-03-26T10:32:00Z", desc: "คนขับเรียกเก็บเงินเกินกว่าที่ตกลงไว้ ตกลง 80 บาท แต่เรียก 350 บาท" },
-  { id: "D002", tripId: "T1189", category: "unsafe", passenger: "อนุชา มีชัย", driver: "สุรชัย เร็วแรง", amount: 0, status: "UNDER_REVIEW", createdAt: "2025-03-25T14:15:00Z", desc: "ขับรถเร็วเกินกำหนด ฝ่าไฟแดงหลายครั้ง ผู้โดยสารรู้สึกไม่ปลอดภัย" },
-  { id: "D003", tripId: "T1045", category: "lost_item", passenger: "กมลา สวยงาม", driver: "ประเสริฐ ดีมาก", amount: 0, status: "RESOLVED", createdAt: "2025-03-24T09:00:00Z", desc: "ลืมกระเป๋าไว้ในรถ คนขับนำส่งคืนเรียบร้อยแล้ว" },
-];
+interface SupportTicket {
+  id: string;
+  subject: string;
+  description: string;
+  category: string;
+  status: string;
+  priority: string;
+  createdAt: string;
+  resolvedAt?: string;
+  user: { name: string; phone: string; role: string };
+  trip?: { id: string; lockedFare: number; status: string };
+}
 
-const CAT: Record<string, string> = { overcharge: "ค่าโดยสารเกิน", unsafe: "ขับรถไม่ปลอดภัย", lost_item: "ของหาย", other: "อื่นๆ" };
+const STATUS_COLOR: Record<string, string> = {
+  OPEN: "badge-pending",
+  IN_PROGRESS: "badge-intransit",
+  RESOLVED: "badge-completed",
+  CLOSED: "badge-active",
+};
+
+const PRIORITY_COLOR: Record<string, string> = {
+  LOW: "text-gray-500",
+  MEDIUM: "text-amber-500",
+  HIGH: "text-orange-500",
+  URGENT: "text-red-500",
+};
 
 export default function DisputesPage() {
-  const [disputes, setDisputes] = useState(DISPUTES);
-  const [selected, setSelected] = useState<string | null>(null);
+  const [tickets, setTickets] = useState<SupportTicket[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<SupportTicket | null>(null);
   const [note, setNote] = useState("");
+  const [resolving, setResolving] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("ALL");
 
-  const resolve = (id: string) => {
-    setDisputes(prev => prev.map(d => d.id === id ? { ...d, status: "RESOLVED" } : d));
-    setSelected(null); setNote("");
+  const load = async () => {
+    try {
+      const token = getToken(); if (!token) return;
+      const statusParam = statusFilter !== "ALL" ? `&status=${statusFilter}` : "";
+      const res = await apiFetch<{ data: { tickets: SupportTicket[] } }>(
+        `/api/v1/admin/disputes?limit=30${statusParam}`,
+        { token }
+      );
+      setTickets(res.data?.tickets || []);
+    } catch { setTickets([]); } finally { setLoading(false); }
   };
 
+  useEffect(() => { load(); }, [statusFilter]);
+
+  const resolve = async (id: string) => {
+    setResolving(true);
+    try {
+      const token = getToken(); if (!token) return;
+      await apiFetch(`/api/v1/admin/disputes/${id}`, {
+        token,
+        method: "PATCH",
+        body: { status: "RESOLVED", resolution: note || "Resolved by admin" },
+      });
+      setTickets(prev => prev.map(t => t.id === id ? { ...t, status: "RESOLVED" } : t));
+      setSelected(null); setNote("");
+    } catch (e) { console.error(e); } finally { setResolving(false); }
+  };
+
+  const STATUS_TABS = ["ALL", "OPEN", "IN_PROGRESS", "RESOLVED"];
+  const filtered = tickets.filter(t => statusFilter === "ALL" || t.status === statusFilter);
+
+  const openCount = tickets.filter(t => t.status === "OPEN").length;
+  const inProgressCount = tickets.filter(t => t.status === "IN_PROGRESS").length;
+  const resolvedCount = tickets.filter(t => t.status === "RESOLVED").length;
+
   return (
-    <div className="p-6 space-y-6 max-w-5xl mx-auto">
+    <div className="p-6 space-y-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between">
-        <div><h1 className="text-xl font-bold text-fairgo-dark">Disputes & Complaints</h1><p className="text-sm text-gray-400">Review and resolve passenger/driver disputes</p></div>
-        <div className="flex gap-2">
-          {[{ l: "All", v: DISPUTES.length }, { l: "Open", v: DISPUTES.filter(d => d.status === "OPEN").length }, { l: "Review", v: DISPUTES.filter(d => d.status === "UNDER_REVIEW").length }].map(t => (
-            <span key={t.l} className="text-xs bg-white border border-gray-200 rounded-xl px-3 py-1.5 font-medium text-gray-500 shadow-card">{t.l} <strong>{t.v}</strong></span>
-          ))}
+        <div>
+          <h1 className="text-xl font-bold text-fairgo-dark">Disputes & Support</h1>
+          <p className="text-sm text-gray-400 mt-0.5">Manage customer and driver complaints</p>
+        </div>
+        <button onClick={load} className="flex items-center gap-1.5 text-xs text-gray-500 bg-white border border-gray-200 rounded-lg px-3 py-2 hover:bg-gray-50 transition">
+          <span className="material-icons-round text-sm">refresh</span>Refresh
+        </button>
+      </div>
+
+      {/* Summary cards */}
+      <div className="grid grid-cols-3 gap-4">
+        {[
+          { label: "Open", count: openCount, color: "text-red-500", bg: "bg-red-50", icon: "report_problem" },
+          { label: "In Review", count: inProgressCount, color: "text-blue-500", bg: "bg-blue-50", icon: "manage_search" },
+          { label: "Resolved", count: resolvedCount, color: "text-emerald-500", bg: "bg-emerald-50", icon: "check_circle" },
+        ].map(c => (
+          <div key={c.label} className="bg-white rounded-2xl p-4 shadow-card flex items-center gap-3">
+            <div className={`w-10 h-10 ${c.bg} rounded-xl flex items-center justify-center`}>
+              <span className={`material-icons-round ${c.color}`}>{c.icon}</span>
+            </div>
+            <div>
+              <p className="text-xs text-gray-400">{c.label}</p>
+              <p className="text-xl font-bold text-fairgo-dark">{loading ? "—" : c.count}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Filter tabs */}
+      <div className="flex gap-1.5">
+        {STATUS_TABS.map(s => (
+          <button
+            key={s}
+            onClick={() => setStatusFilter(s)}
+            className={`text-xs px-3 py-1.5 rounded-lg font-medium transition ${
+              statusFilter === s ? "bg-primary text-white" : "bg-white text-gray-500 border border-gray-200 hover:bg-gray-50"
+            }`}
+          >
+            {s.replace("_", " ")}
+          </button>
+        ))}
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-2xl shadow-card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100">
+                <th className="text-left p-4 text-xs font-semibold text-gray-400">Ticket</th>
+                <th className="text-left p-4 text-xs font-semibold text-gray-400">Subject</th>
+                <th className="text-left p-4 text-xs font-semibold text-gray-400">User</th>
+                <th className="text-left p-4 text-xs font-semibold text-gray-400">Priority</th>
+                <th className="text-left p-4 text-xs font-semibold text-gray-400">Status</th>
+                <th className="text-left p-4 text-xs font-semibold text-gray-400">Date</th>
+                <th className="text-left p-4 text-xs font-semibold text-gray-400">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {loading && (
+                <tr><td colSpan={7} className="p-8 text-center text-gray-400">Loading...</td></tr>
+              )}
+              {!loading && filtered.length === 0 && (
+                <tr><td colSpan={7} className="p-8 text-center text-gray-400">No disputes found</td></tr>
+              )}
+              {filtered.map(t => (
+                <tr key={t.id} className="hover:bg-gray-50/50 transition">
+                  <td className="p-4 text-xs text-gray-400 font-mono">{t.id.slice(0, 8)}</td>
+                  <td className="p-4 max-w-[200px]">
+                    <p className="text-sm font-medium text-fairgo-dark truncate">{t.subject}</p>
+                    <p className="text-xs text-gray-400 truncate">{t.category}</p>
+                  </td>
+                  <td className="p-4">
+                    <p className="text-xs font-medium text-fairgo-dark">{t.user?.name}</p>
+                    <p className="text-xs text-gray-400">{t.user?.role}</p>
+                  </td>
+                  <td className="p-4">
+                    <span className={`text-xs font-semibold ${PRIORITY_COLOR[t.priority] || "text-gray-500"}`}>
+                      {t.priority}
+                    </span>
+                  </td>
+                  <td className="p-4">
+                    <span className={STATUS_COLOR[t.status] || "badge-pending"}>
+                      {t.status.replace("_", " ")}
+                    </span>
+                  </td>
+                  <td className="p-4 text-xs text-gray-400">
+                    {new Date(t.createdAt).toLocaleDateString("th-TH")}
+                  </td>
+                  <td className="p-4">
+                    {t.status !== "RESOLVED" && t.status !== "CLOSED" && (
+                      <button
+                        onClick={() => { setSelected(t); setNote(""); }}
+                        className="text-xs text-primary font-medium hover:underline"
+                      >
+                        Review
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-card overflow-hidden">
-        <table className="w-full">
-          <thead><tr className="bg-gray-50 text-xs font-semibold text-gray-400 uppercase">
-            <th className="text-left px-4 py-3">ID</th><th className="text-left px-4 py-3">Category</th>
-            <th className="text-left px-4 py-3">Passenger</th><th className="text-left px-4 py-3">Driver</th>
-            <th className="text-left px-4 py-3">Status</th><th className="text-left px-4 py-3">Date</th>
-            <th className="text-left px-4 py-3">Action</th>
-          </tr></thead>
-          <tbody className="divide-y divide-gray-50">
-            {disputes.map(d => (
-              <tr key={d.id} className="hover:bg-gray-50/50 transition">
-                <td className="px-4 py-3 text-sm font-mono text-gray-500">{d.id}</td>
-                <td className="px-4 py-3 text-sm text-fairgo-dark">{CAT[d.category] || d.category}</td>
-                <td className="px-4 py-3 text-sm">{d.passenger}</td>
-                <td className="px-4 py-3 text-sm text-gray-500">{d.driver}</td>
-                <td className="px-4 py-3">
-                  {d.status === "OPEN" && <span className="badge-suspended">Open</span>}
-                  {d.status === "UNDER_REVIEW" && <span className="badge-pending">Under Review</span>}
-                  {d.status === "RESOLVED" && <span className="badge-completed">Resolved</span>}
-                </td>
-                <td className="px-4 py-3 text-xs text-gray-400">{new Date(d.createdAt).toLocaleDateString("th-TH")}</td>
-                <td className="px-4 py-3">
-                  {d.status !== "RESOLVED" && (
-                    <button onClick={() => setSelected(d.id)} className="text-xs text-primary font-medium hover:underline">Review</button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* Review modal */}
+      {selected && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-fairgo-dark">Review Dispute</h3>
+              <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-600">
+                <span className="material-icons-round">close</span>
+              </button>
+            </div>
 
-      {selected && (() => {
-        const d = disputes.find(x => x.id === selected)!;
-        return (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setSelected(null)}>
-            <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-fairgo-dark">Review Dispute {d.id}</h3>
-                <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-600"><span className="material-icons-round text-xl">close</span></button>
+            <div className="space-y-3 mb-4">
+              <div className="bg-gray-50 rounded-xl p-4">
+                <p className="text-sm font-medium text-fairgo-dark mb-1">{selected.subject}</p>
+                <p className="text-xs text-gray-500">{selected.description}</p>
               </div>
-              <div className="bg-gray-50 rounded-xl p-3 mb-4 text-sm text-gray-600">{d.desc}</div>
-              <div className="space-y-2 text-sm mb-4">
-                <div className="flex justify-between"><span className="text-gray-400">Category</span><span className="font-medium">{CAT[d.category]}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Passenger</span><span className="font-medium">{d.passenger}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Driver</span><span className="font-medium">{d.driver}</span></div>
-              </div>
-              <textarea value={note} onChange={e => setNote(e.target.value)} placeholder="Admin note..." rows={3}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none mb-3 resize-none" />
-              <div className="flex gap-2">
-                <button onClick={() => setSelected(null)} className="flex-1 border border-gray-200 text-gray-500 text-sm font-medium py-2.5 rounded-xl hover:bg-gray-50 transition">Close</button>
-                <button onClick={() => resolve(d.id)} className="flex-1 bg-primary text-white text-sm font-semibold py-2.5 rounded-xl hover:bg-primary-600 transition">Mark Resolved</button>
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div><span className="text-gray-400">User: </span><span className="font-medium">{selected.user?.name}</span></div>
+                <div><span className="text-gray-400">Priority: </span><span className={`font-medium ${PRIORITY_COLOR[selected.priority]}`}>{selected.priority}</span></div>
+                {selected.trip && <div><span className="text-gray-400">Trip fare: </span><span className="font-medium">฿{selected.trip.lockedFare}</span></div>}
               </div>
             </div>
+
+            <div className="mb-4">
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Resolution Note</label>
+              <textarea
+                className="w-full border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none resize-none"
+                rows={3}
+                placeholder="Add admin resolution note..."
+                value={note}
+                onChange={e => setNote(e.target.value)}
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => resolve(selected.id)}
+                disabled={resolving}
+                className="flex-1 bg-primary text-white rounded-xl py-2.5 text-sm font-semibold hover:bg-primary-600 transition disabled:opacity-50"
+              >
+                {resolving ? "Resolving..." : "Mark Resolved"}
+              </button>
+              <button
+                onClick={() => setSelected(null)}
+                className="px-4 bg-gray-100 text-gray-600 rounded-xl py-2.5 text-sm font-medium hover:bg-gray-200 transition"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
-        );
-      })()}
+        </div>
+      )}
     </div>
   );
 }

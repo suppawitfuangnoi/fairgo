@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { apiFetch } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import { useAdminSocket } from "@/hooks/useSocket";
 
 interface DashboardStats {
   totalTrips: number; activeTrips: number; totalRevenue: number;
@@ -41,10 +42,20 @@ function Badge({ status }: { status: string }) {
   return <span className={m[status] || "badge-pending"}>{status.replace(/_/g, " ")}</span>;
 }
 
+// Map driver lat/lng (Bangkok area) to approximate pixel position in the map div
+function geoToMapPercent(lat: number, lng: number) {
+  // Bangkok approx bounds: lat 13.5-14.0, lng 100.3-100.9
+  const latMin = 13.5, latMax = 14.0, lngMin = 100.3, lngMax = 100.9;
+  const x = ((lng - lngMin) / (lngMax - lngMin)) * 100;
+  const y = ((latMax - lat) / (latMax - latMin)) * 100;
+  return { x: Math.max(5, Math.min(95, x)), y: Math.max(5, Math.min(95, y)) };
+}
+
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [trips, setTrips] = useState<RecentTrip[]>([]);
   const [loading, setLoading] = useState(true);
+  const { isConnected, drivers } = useAdminSocket();
 
   const load = async () => {
     try {
@@ -58,6 +69,9 @@ export default function DashboardPage() {
   const hours = Array.from({ length: 12 }, (_, i) => ({ label: `${(i * 2).toString().padStart(2, "0")}:00`, val: Math.floor(Math.random() * 80 + 10) }));
   const maxH = Math.max(...hours.map(h => h.val));
 
+  // Fallback dots when no socket drivers
+  const fallbackDots = [{ top: "28%", left: "22%" }, { top: "52%", left: "58%" }, { top: "18%", left: "68%" }, { top: "65%", left: "33%" }];
+
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between">
@@ -67,7 +81,8 @@ export default function DashboardPage() {
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 text-xs text-gray-400">
-            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />Live
+            <div className={`w-2 h-2 rounded-full ${isConnected ? "bg-emerald-400 animate-pulse" : "bg-gray-300"}`} />
+            {isConnected ? "Live" : "Polling"}
           </div>
           <button onClick={load} className="flex items-center gap-1.5 text-xs text-gray-500 bg-white border border-gray-200 rounded-lg px-3 py-2 hover:bg-gray-50 transition">
             <span className="material-icons-round text-sm">refresh</span>Refresh
@@ -79,7 +94,9 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard icon="local_taxi" label="Trips Today" bg="bg-primary/10" color="text-primary" value={loading ? "—" : (stats?.totalTrips ?? 0).toLocaleString()} sub={`${stats?.activeTrips ?? 0} active`} />
         <KpiCard icon="payments" label="Revenue (GMV)" bg="bg-emerald-50" color="text-emerald-500" value={loading ? "—" : `฿${(stats?.totalRevenue ?? 0).toLocaleString()}`} sub="Today" />
-        <KpiCard icon="directions_car" label="Online Drivers" bg="bg-amber-50" color="text-amber-500" value={loading ? "—" : (stats?.onlineDrivers ?? stats?.activeDrivers ?? 0).toLocaleString()} sub={`${stats?.pendingVerifications ?? 0} pending`} />
+        <KpiCard icon="directions_car" label="Online Drivers" bg="bg-amber-50" color="text-amber-500"
+          value={loading ? "—" : (isConnected ? drivers.length : (stats?.onlineDrivers ?? stats?.activeDrivers ?? 0)).toLocaleString()}
+          sub={`${stats?.pendingVerifications ?? 0} pending`} />
         <KpiCard icon="star" label="Avg Rating" bg="bg-purple-50" color="text-purple-500" value="4.82" sub="Platform avg" />
       </div>
 
@@ -129,15 +146,41 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
         <div className="lg:col-span-3 bg-white rounded-2xl shadow-card overflow-hidden">
           <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-            <div><h2 className="font-semibold text-fairgo-dark">Live Trip Map</h2><p className="text-xs text-gray-400">{stats?.activeTrips ?? 0} active trips</p></div>
-            <span className="flex items-center gap-1.5 text-xs text-emerald-500 font-medium"><div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />Live</span>
+            <div>
+              <h2 className="font-semibold text-fairgo-dark">Live Trip Map</h2>
+              <p className="text-xs text-gray-400">
+                {isConnected ? `${drivers.length} drivers online` : `${stats?.activeTrips ?? 0} active trips`}
+              </p>
+            </div>
+            <span className="flex items-center gap-1.5 text-xs font-medium">
+              {isConnected
+                ? <><div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /><span className="text-emerald-500">Socket Live</span></>
+                : <><div className="w-2 h-2 rounded-full bg-amber-400" /><span className="text-amber-500">HTTP Poll</span></>
+              }
+            </span>
           </div>
           <div className="map-bg h-56 relative overflow-hidden">
-            {[{ top: "28%", left: "22%" }, { top: "52%", left: "58%" }, { top: "18%", left: "68%" }, { top: "65%", left: "33%" }].map((pos, i) => (
-              <div key={i} className="absolute w-8 h-8 bg-primary rounded-full flex items-center justify-center shadow-lg border-2 border-white animate-bounce" style={{ top: pos.top, left: pos.left, animationDelay: `${i * 0.4}s`, animationDuration: "2.5s" }}>
-                <span className="material-icons-round text-white text-sm">local_taxi</span>
-              </div>
-            ))}
+            {/* Real-time driver dots from Socket.IO */}
+            {drivers.length > 0
+              ? drivers.map((driver) => {
+                  const pos = geoToMapPercent(driver.lat, driver.lng);
+                  return (
+                    <div
+                      key={driver.userId}
+                      className="absolute w-8 h-8 bg-primary rounded-full flex items-center justify-center shadow-lg border-2 border-white transition-all duration-1000"
+                      style={{ top: `${pos.y}%`, left: `${pos.x}%`, transform: "translate(-50%, -50%)" }}
+                      title={`Driver: ${driver.driverId}`}
+                    >
+                      <span className="material-icons-round text-white text-sm">{VI[driver.vehicleType || "TAXI"] || "local_taxi"}</span>
+                    </div>
+                  );
+                })
+              : fallbackDots.map((pos, i) => (
+                  <div key={i} className="absolute w-8 h-8 bg-primary rounded-full flex items-center justify-center shadow-lg border-2 border-white animate-bounce" style={{ top: pos.top, left: pos.left, animationDelay: `${i * 0.4}s`, animationDuration: "2.5s" }}>
+                    <span className="material-icons-round text-white text-sm">local_taxi</span>
+                  </div>
+                ))
+            }
             <div className="absolute top-1/2 left-0 right-0 h-px bg-white/40" />
             <div className="absolute top-0 bottom-0 left-1/2 w-px bg-white/40" />
           </div>

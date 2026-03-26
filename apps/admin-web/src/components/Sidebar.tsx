@@ -6,14 +6,15 @@ import { useState } from "react";
 import { clearAuth, getUser } from "@/lib/auth";
 
 const navItems = [
-  { href: "/dashboard",           label: "Dashboard",      icon: "dashboard" },
-  { href: "/dashboard/trips",     label: "Trip Monitor",   icon: "map" },
-  { href: "/dashboard/users",     label: "Users & Drivers",icon: "people" },
-  { href: "/dashboard/pricing",   label: "Pricing Policy", icon: "sell" },
-  { href: "/dashboard/disputes",  label: "Disputes",       icon: "gavel" },
-  { href: "/dashboard/promos",    label: "Promotions",     icon: "local_offer" },
-  { href: "/dashboard/analytics", label: "Reports",        icon: "bar_chart" },
-  { href: "/dashboard/settings",  label: "Settings",       icon: "settings" },
+  { href: "/dashboard",           label: "Dashboard",       icon: "dashboard" },
+  { href: "/dashboard/trips",     label: "Trip Monitor",    icon: "map" },
+  { href: "/dashboard/users",     label: "Users",           icon: "people" },
+  { href: "/dashboard/drivers",   label: "Driver Verify",   icon: "verified_user" },
+  { href: "/dashboard/pricing",   label: "Pricing Policy",  icon: "sell" },
+  { href: "/dashboard/disputes",  label: "Disputes",        icon: "gavel" },
+  { href: "/dashboard/promos",    label: "Promotions",      icon: "local_offer" },
+  { href: "/dashboard/analytics", label: "Reports",         icon: "bar_chart" },
+  { href: "/dashboard/settings",  label: "Settings",        icon: "settings" },
 ];
 
 export default function Sidebar() {
