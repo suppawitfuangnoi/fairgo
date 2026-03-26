@@ -26,6 +26,12 @@ export function generateOTP(phone: string): string {
 }
 
 export function verifyOTP(phone: string, code: string): boolean {
+  // In development mode, always accept the mock OTP code
+  if (process.env.NODE_ENV !== "production" && code === MOCK_OTP) {
+    otpStore.delete(phone);
+    return true;
+  }
+
   const stored = otpStore.get(phone);
   if (!stored) return false;
   if (Date.now() > stored.expiresAt) {
