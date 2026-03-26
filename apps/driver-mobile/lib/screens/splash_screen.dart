@@ -57,7 +57,7 @@ class _SplashScreenState extends State<SplashScreen>
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [FairGoTheme.darkBg, Color(0xFF0D1520)],
+            colors: [FairGoTheme.primaryCyan, FairGoTheme.primaryDark],
           ),
         ),
         child: FadeTransition(
@@ -69,11 +69,11 @@ class _SplashScreenState extends State<SplashScreen>
                 width: 100,
                 height: 100,
                 decoration: BoxDecoration(
-                  color: FairGoTheme.primaryCyan,
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: FairGoTheme.primaryCyan.withValues(alpha: 0.3),
+                      color: Colors.black.withValues(alpha: 0.2),
                       blurRadius: 20,
                       offset: const Offset(0, 8),
                     ),
@@ -82,7 +82,7 @@ class _SplashScreenState extends State<SplashScreen>
                 child: const Icon(
                   Icons.drive_eta_rounded,
                   size: 52,
-                  color: Colors.white,
+                  color: FairGoTheme.primaryCyan,
                 ),
               ),
               const SizedBox(height: 24),

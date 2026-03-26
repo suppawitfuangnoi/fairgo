@@ -1,213 +1,108 @@
 "use client";
-
-import { useState, useEffect, useCallback } from "react";
-import Header from "@/components/Header";
+import { useState, useEffect } from "react";
 import { apiFetch } from "@/lib/api";
 import { getToken } from "@/lib/auth";
-import { RefreshCw } from "lucide-react";
 
 interface Trip {
-  id: string;
-  lockedFare: number;
-  status: string;
-  pickupAddress: string;
-  dropoffAddress: string;
-  actualDistance: number | null;
-  actualDuration: number | null;
-  createdAt: string;
-  completedAt: string | null;
-  rideRequest: {
-    vehicleType: string;
-    customerProfile: { user: { name: string; avatarUrl: string | null } };
-  };
-  driverProfile: {
-    user: { name: string; avatarUrl: string | null };
-  };
-  payment: { amount: number; status: string; commission: number } | null;
+  id: string; status: string; lockedFare: number; createdAt: string;
+  rideRequest: { pickupAddress: string; dropoffAddress: string; vehicleType: string; customerProfile: { user: { name: string } } };
+  driverProfile: { user: { name: string }; vehicles: { plateNumber: string }[] };
 }
 
-interface TripListData {
-  trips: Trip[];
-  meta: { page: number; limit: number; total: number; totalPages: number };
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const colors: Record<string, string> = {
-    COMPLETED: "bg-emerald-50 text-emerald-600",
-    IN_PROGRESS: "bg-blue-50 text-blue-600",
-    DRIVER_ASSIGNED: "bg-amber-50 text-amber-600",
-    DRIVER_EN_ROUTE: "bg-cyan-50 text-cyan-600",
-    DRIVER_ARRIVED: "bg-indigo-50 text-indigo-600",
-    PICKUP_CONFIRMED: "bg-violet-50 text-violet-600",
-    CANCELLED: "bg-red-50 text-red-500",
-  };
-  return (
-    <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${colors[status] || "bg-gray-50 text-gray-600"}`}>
-      {status.replace(/_/g, " ")}
-    </span>
-  );
-}
+const VI: Record<string, string> = { TAXI: "local_taxi", MOTORCYCLE: "two_wheeler", TUKTUK: "electric_rickshaw" };
+const STATUS_FILTER = ["ALL", "IN_PROGRESS", "DRIVER_EN_ROUTE", "COMPLETED", "CANCELLED"];
+const BADGE: Record<string, string> = { COMPLETED: "badge-completed", IN_PROGRESS: "badge-intransit", DRIVER_EN_ROUTE: "badge-intransit", DRIVER_ASSIGNED: "badge-intransit", DRIVER_ARRIVED: "badge-intransit", CANCELLED: "badge-suspended" };
 
 export default function TripsPage() {
-  const [data, setData] = useState<TripListData | null>(null);
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [status, setStatus] = useState("ALL");
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState("");
-  const [page, setPage] = useState(1);
+  const [selected, setSelected] = useState<Trip | null>(null);
 
-  const fetchTrips = useCallback(async () => {
-    setLoading(true);
+  const load = async () => {
     try {
-      const token = getToken();
-      if (!token) return;
-      const params = new URLSearchParams();
-      params.set("page", page.toString());
-      params.set("limit", "10");
-      if (statusFilter) params.set("status", statusFilter);
+      const token = getToken(); if (!token) return;
+      const res = await apiFetch<{ data: { trips: Trip[] } }>("/api/v1/admin/trips?limit=30", { token });
+      setTrips(res.data?.trips || res.data as any || []);
+    } catch { setTrips([]); } finally { setLoading(false); }
+  };
+  useEffect(() => { load(); }, []);
 
-      const res = await apiFetch<{ data: TripListData }>(
-        `/api/v1/admin/trips?${params}`,
-        { token }
-      );
-      setData(res.data);
-    } catch (err) {
-      console.error("Fetch trips error:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [page, statusFilter]);
-
-  useEffect(() => {
-    fetchTrips();
-  }, [fetchTrips]);
+  const filtered = trips.filter(t => status === "ALL" || t.status === status);
 
   return (
-    <div className="flex-1">
-      <Header title="Trip Management" />
-      <div className="p-6 space-y-6">
-        <div className="bg-white rounded-xl border border-gray-100 p-4">
-          <div className="flex items-center gap-3">
-            <select
-              className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white"
-              value={statusFilter}
-              onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-            >
-              <option value="">All Statuses</option>
-              <option value="DRIVER_ASSIGNED">Driver Assigned</option>
-              <option value="DRIVER_EN_ROUTE">Driver En Route</option>
-              <option value="IN_PROGRESS">In Progress</option>
-              <option value="COMPLETED">Completed</option>
-              <option value="CANCELLED">Cancelled</option>
-            </select>
-            <button
-              onClick={fetchTrips}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </button>
-            <span className="text-sm text-gray-500 ml-auto">
-              {data?.meta.total || 0} trips
-            </span>
-          </div>
+    <div className="p-6 space-y-5 max-w-7xl mx-auto">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div><h1 className="text-xl font-bold text-fairgo-dark">Trip Monitoring</h1><p className="text-sm text-gray-400">{trips.filter(t => ["IN_PROGRESS","DRIVER_EN_ROUTE","DRIVER_ASSIGNED"].includes(t.status)).length} active trips</p></div>
+        <button onClick={load} className="flex items-center gap-1.5 text-xs text-gray-500 bg-white border border-gray-200 rounded-xl px-3 py-2 hover:bg-gray-50 transition shadow-card">
+          <span className="material-icons-round text-sm">refresh</span>Refresh
+        </button>
+      </div>
+
+      {/* Live Map */}
+      <div className="bg-white rounded-2xl shadow-card overflow-hidden">
+        <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+          <h2 className="font-semibold text-fairgo-dark">Live Map</h2>
+          <span className="flex items-center gap-1.5 text-xs text-emerald-500"><div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />Live tracking</span>
         </div>
-
-        <div className="bg-white rounded-xl border border-gray-100">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="text-left border-b border-gray-100">
-                  <th className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase">ID</th>
-                  <th className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Passenger</th>
-                  <th className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Driver</th>
-                  <th className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Route</th>
-                  <th className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Fare</th>
-                  <th className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
-                  <th className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={7} className="py-12 text-center">
-                      <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto" />
-                    </td>
-                  </tr>
-                ) : (
-                  (data?.trips || []).map((trip) => (
-                    <tr key={trip.id} className="border-b border-gray-50 hover:bg-gray-50/50">
-                      <td className="px-5 py-3 text-xs text-gray-500 font-mono">
-                        {trip.id.substring(0, 8)}
-                      </td>
-                      <td className="px-5 py-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 text-xs font-bold">
-                            {trip.rideRequest?.customerProfile?.user?.name?.charAt(0) || "?"}
-                          </div>
-                          <span className="text-sm">{trip.rideRequest?.customerProfile?.user?.name || "Unknown"}</span>
-                        </div>
-                      </td>
-                      <td className="px-5 py-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 text-xs font-bold">
-                            {trip.driverProfile?.user?.name?.charAt(0) || "?"}
-                          </div>
-                          <span className="text-sm">{trip.driverProfile?.user?.name || "Unknown"}</span>
-                        </div>
-                      </td>
-                      <td className="px-5 py-3">
-                        <p className="text-xs text-gray-500 truncate max-w-40">
-                          {trip.pickupAddress}
-                        </p>
-                        <p className="text-xs text-primary-500 truncate max-w-40">
-                          → {trip.dropoffAddress}
-                        </p>
-                      </td>
-                      <td className="px-5 py-3 text-sm font-semibold text-primary-600">
-                        ฿{trip.lockedFare.toFixed(2)}
-                      </td>
-                      <td className="px-5 py-3">
-                        <StatusBadge status={trip.status} />
-                      </td>
-                      <td className="px-5 py-3 text-xs text-gray-500">
-                        {new Date(trip.createdAt).toLocaleDateString()}
-                      </td>
-                    </tr>
-                  ))
-                )}
-                {!loading && (!data?.trips || data.trips.length === 0) && (
-                  <tr>
-                    <td colSpan={7} className="py-12 text-center text-gray-400 text-sm">
-                      No trips found
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {data && data.meta.totalPages > 1 && (
-            <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100">
-              <p className="text-xs text-gray-500">
-                Page {page} of {data.meta.totalPages}
-              </p>
-              <div className="flex gap-1">
-                <button
-                  onClick={() => setPage(Math.max(1, page - 1))}
-                  disabled={page === 1}
-                  className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-                >
-                  Prev
-                </button>
-                <button
-                  onClick={() => setPage(Math.min(data.meta.totalPages, page + 1))}
-                  disabled={page === data.meta.totalPages}
-                  className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-                >
-                  Next
-                </button>
-              </div>
+        <div className="map-bg h-48 relative overflow-hidden">
+          {[{ t: "25%", l: "20%" },{ t: "50%", l: "55%" },{ t: "15%", l: "72%" }].map((p,i) => (
+            <div key={i} className="absolute w-8 h-8 bg-primary rounded-full flex items-center justify-center shadow-lg border-2 border-white" style={{ top: p.t, left: p.l }}>
+              <span className="material-icons-round text-white text-sm">local_taxi</span>
             </div>
-          )}
+          ))}
+          <div className="absolute top-1/2 left-0 right-0 h-px bg-white/40" />
+          <div className="absolute top-0 bottom-0 left-1/2 w-px bg-white/40" />
+          <div className="absolute bottom-3 right-3 bg-white/90 backdrop-blur rounded-xl px-3 py-1.5 text-xs font-medium text-fairgo-dark shadow">
+            {trips.filter(t => ["IN_PROGRESS","DRIVER_EN_ROUTE"].includes(t.status)).length} cars on road
+          </div>
         </div>
+      </div>
+
+      {/* Status filter */}
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {STATUS_FILTER.map(s => (
+          <button key={s} onClick={() => setStatus(s)}
+            className={`flex-shrink-0 px-4 py-2 text-xs font-semibold rounded-xl transition ${status === s ? "bg-primary text-white shadow-sm" : "bg-white text-gray-500 border border-gray-200 hover:border-primary/30 hover:text-primary"}`}>
+            {s.replace(/_/g, " ")}
+            <span className={`ml-1.5 ${status === s ? "text-white/80" : "text-gray-400"}`}>
+              {s === "ALL" ? trips.length : trips.filter(t => t.status === s).length}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-card overflow-hidden">
+        {loading ? <div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" /></div> : (
+          <table className="w-full">
+            <thead><tr className="bg-gray-50 text-xs font-semibold text-gray-400 uppercase">
+              <th className="text-left px-4 py-3">Trip ID</th><th className="text-left px-4 py-3">Passenger</th>
+              <th className="text-left px-4 py-3">Driver</th><th className="text-left px-4 py-3">Route</th>
+              <th className="text-left px-4 py-3">Vehicle</th><th className="text-right px-4 py-3">Fare</th>
+              <th className="text-left px-4 py-3">Status</th><th className="text-left px-4 py-3">Time</th>
+            </tr></thead>
+            <tbody className="divide-y divide-gray-50">
+              {filtered.length === 0 && <tr><td colSpan={8} className="py-10 text-center text-sm text-gray-400">No trips found</td></tr>}
+              {filtered.map(t => (
+                <tr key={t.id} className="hover:bg-gray-50/50 transition cursor-pointer" onClick={() => setSelected(t)}>
+                  <td className="px-4 py-3 font-mono text-xs text-gray-400">{t.id.substring(0, 8)}…</td>
+                  <td className="px-4 py-3 text-sm font-medium">{t.rideRequest?.customerProfile?.user?.name || "N/A"}</td>
+                  <td className="px-4 py-3 text-sm text-gray-500">{t.driverProfile?.user?.name || "N/A"}</td>
+                  <td className="px-4 py-3 max-w-[180px]">
+                    <p className="text-xs text-gray-400 truncate">From: {t.rideRequest?.pickupAddress?.substring(0, 20)}</p>
+                    <p className="text-xs text-fairgo-dark truncate">To: {t.rideRequest?.dropoffAddress?.substring(0, 20)}</p>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="material-icons-round text-gray-400 text-base">{VI[t.rideRequest?.vehicleType] || "directions_car"}</span>
+                  </td>
+                  <td className="px-4 py-3 text-sm font-bold text-primary text-right">฿{t.lockedFare?.toFixed(0)}</td>
+                  <td className="px-4 py-3"><span className={BADGE[t.status] || "badge-pending"}>{t.status?.replace(/_/g, " ")}</span></td>
+                  <td className="px-4 py-3 text-xs text-gray-400">{new Date(t.createdAt).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

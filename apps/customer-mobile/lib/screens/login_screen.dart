@@ -36,6 +36,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: FairGoTheme.lightBg,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -47,38 +48,52 @@ class _LoginScreenState extends State<LoginScreen> {
                 const Spacer(flex: 1),
                 Center(
                   child: Container(
-                    width: 72,
-                    height: 72,
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: FairGoTheme.primaryCyan,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Icon(
-                      Icons.directions_car_rounded,
-                      size: 40,
                       color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                const Center(
-                  child: Text(
-                    'FAIRGO',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: FairGoTheme.textPrimary,
-                      letterSpacing: 2,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Center(
-                  child: Text(
-                    'Enter your phone number to get started',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: FairGoTheme.textSecondary,
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 72,
+                          height: 72,
+                          decoration: BoxDecoration(
+                            color: FairGoTheme.primaryCyan,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Icon(
+                            Icons.directions_car_rounded,
+                            size: 40,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        const Text(
+                          'FAIRGO',
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: FairGoTheme.textPrimary,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Enter your phone number to get started',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: FairGoTheme.textSecondary,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

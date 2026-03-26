@@ -19,9 +19,9 @@ export default function DashboardLayout({
   }, [router]);
 
   return (
-    <div className="flex min-h-screen bg-fairgo-light">
+    <div className="flex min-h-screen bg-fairgo-bg">
       <Sidebar />
-      <main className="flex-1 overflow-auto">{children}</main>
+      <main className="flex-1 overflow-auto min-w-0">{children}</main>
     </div>
   );
 }

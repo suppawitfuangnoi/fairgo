@@ -1,34 +1,26 @@
 "use client";
 
-import { Bell, HelpCircle, Search } from "lucide-react";
-
-interface HeaderProps {
-  title: string;
-}
+interface HeaderProps { title?: string }
 
 export default function Header({ title }: HeaderProps) {
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("th-TH", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+
   return (
-    <header className="bg-white border-b border-gray-100 px-6 py-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-fairgo-dark">{title}</h1>
-
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search trips, drivers..."
-              className="pl-9 pr-4 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg w-64 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            />
+    <header className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-gray-100 px-6 py-3">
+      <div className="flex items-center justify-between gap-4">
+        <p className="text-xs text-gray-400">{dateStr}</p>
+        <div className="flex items-center gap-2">
+          <div className="relative hidden sm:block">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 material-icons-round text-gray-300 text-base">search</span>
+            <input type="text" placeholder="Search trips, drivers..." className="pl-9 pr-4 py-2 text-sm bg-gray-50 border border-gray-100 rounded-xl w-56 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
           </div>
-
-          <button className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition">
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
+          <button className="relative w-9 h-9 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-xl transition">
+            <span className="material-icons-round text-xl">notifications</span>
+            <span className="absolute top-2 right-2 w-2 h-2 bg-red-400 rounded-full border border-white" />
           </button>
-
-          <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition">
-            <HelpCircle className="w-5 h-5" />
+          <button className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-xl transition">
+            <span className="material-icons-round text-xl">help_outline</span>
           </button>
         </div>
       </div>

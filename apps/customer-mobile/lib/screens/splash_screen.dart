@@ -99,7 +99,7 @@ class _SplashScreenState extends State<SplashScreen>
               ),
               const SizedBox(height: 8),
               Text(
-                'Fair rides, fair prices',
+                'เดินทางอย่างเป็นธรรม',
                 style: TextStyle(
                   fontSize: 16,
                   color: Colors.white.withValues(alpha: 0.85),

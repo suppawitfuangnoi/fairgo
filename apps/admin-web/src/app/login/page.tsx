@@ -40,61 +40,107 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100">
-      <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-primary-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-            </svg>
+    <div className="min-h-screen flex bg-fairgo-bg">
+      {/* Left panel */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary to-primary-700 flex-col items-center justify-center p-12 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10"
+          style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)', backgroundSize: '40px 40px' }}
+        />
+        <div className="relative z-10 text-center">
+          <div className="w-20 h-20 bg-white/20 backdrop-blur rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl">
+            <span className="material-icons-round text-white text-4xl">directions_car</span>
           </div>
-          <h1 className="text-2xl font-bold text-fairgo-dark">FAIRGO</h1>
-          <p className="text-sm text-primary-500 font-medium">ADMIN PORTAL</p>
+          <h1 className="text-4xl font-extrabold text-white tracking-tight mb-2">FAIRGO</h1>
+          <p className="text-white/80 text-lg font-medium mb-8">Admin Management Portal</p>
+          <div className="space-y-3 text-left max-w-xs">
+            {["Real-time trip monitoring", "Driver verification & management", "Pricing policy control", "Analytics & reports"].map(f => (
+              <div key={f} className="flex items-center gap-3 text-white/90 text-sm">
+                <span className="material-icons-round text-white/60 text-base">check_circle</span>
+                {f}
+              </div>
+            ))}
+          </div>
         </div>
+      </div>
 
-        <form onSubmit={handleLogin} className="space-y-4">
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg p-3">
-              {error}
+      {/* Right panel */}
+      <div className="flex-1 flex items-center justify-center p-6">
+        <div className="w-full max-w-sm">
+          {/* Mobile logo */}
+          <div className="text-center mb-8 lg:hidden">
+            <div className="w-14 h-14 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-3">
+              <span className="material-icons-round text-white text-3xl">directions_car</span>
             </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition"
-              placeholder="admin@fairgo.th"
-              required
-            />
+            <h1 className="text-2xl font-extrabold text-fairgo-dark">FAIRGO</h1>
+            <p className="text-xs text-primary font-semibold uppercase tracking-widest mt-1">Admin Portal</p>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition"
-              placeholder="Enter your password"
-              required
-            />
+          <div className="bg-white rounded-2xl shadow-card p-7">
+            <h2 className="text-xl font-bold text-fairgo-dark mb-1">Sign In</h2>
+            <p className="text-sm text-gray-400 mb-6">Enter your admin credentials to continue</p>
+
+            <form onSubmit={handleLogin} className="space-y-4">
+              {error && (
+                <div className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl p-3">
+                  <span className="material-icons-round text-sm">error_outline</span>
+                  {error}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Email Address</label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 material-icons-round text-gray-300 text-lg">mail</span>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition text-sm bg-gray-50 focus:bg-white"
+                    placeholder="admin@fairgo.app"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Password</label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 material-icons-round text-gray-300 text-lg">lock</span>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition text-sm bg-gray-50 focus:bg-white"
+                    placeholder="••••••••"
+                    required
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-primary hover:bg-primary-600 text-white font-semibold py-3 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm mt-2"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  <>
+                    <span className="material-icons-round text-lg">login</span>
+                    Sign In to Dashboard
+                  </>
+                )}
+              </button>
+            </form>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-primary-500 hover:bg-primary-600 text-white font-medium py-2.5 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? "Signing in..." : "Sign In"}
-          </button>
-        </form>
-
-        <p className="mt-6 text-center text-xs text-gray-400">
-          &copy; 2024 FAIRGO Co., Ltd. Thailand. All rights reserved.
-        </p>
+          <p className="mt-5 text-center text-xs text-gray-400">
+            &copy; 2025 FAIRGO Co., Ltd. Thailand
+          </p>
+        </div>
       </div>
     </div>
   );

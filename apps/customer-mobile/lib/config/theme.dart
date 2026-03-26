@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
 class FairGoTheme {
-  static const Color primaryCyan = Color(0xFF00BCD4);
-  static const Color primaryDark = Color(0xFF0097A7);
+  static const Color primaryCyan = Color(0xFF13C8EC);
+  static const Color primaryDark = Color(0xFF0EA5C5);
   static const Color darkBg = Color(0xFF1A2332);
   static const Color cardBg = Color(0xFF243040);
-  static const Color lightBg = Color(0xFFF8FAFB);
-  static const Color textPrimary = Color(0xFF1A2332);
+  static const Color lightBg = Color(0xFFF6F8F8);
+  static const Color textPrimary = Color(0xFF0F172A);
   static const Color textSecondary = Color(0xFF6B7280);
   static const Color success = Color(0xFF10B981);
   static const Color warning = Color(0xFFF59E0B);
@@ -16,7 +16,7 @@ class FairGoTheme {
   static ThemeData get lightTheme => ThemeData(
         primaryColor: primaryCyan,
         scaffoldBackgroundColor: lightBg,
-        fontFamily: 'Roboto',
+        fontFamily: 'Plus Jakarta Sans',
         colorScheme: ColorScheme.fromSeed(
           seedColor: primaryCyan,
           primary: primaryCyan,

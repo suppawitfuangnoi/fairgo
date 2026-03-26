@@ -14,8 +14,10 @@ class _RideRequestScreenState extends State<RideRequestScreen> {
   final _pickupController = TextEditingController(text: 'Siam Paragon, Gate 1');
   final _dropoffController = TextEditingController(text: 'ICONSIAM, Charoen Nakhon Rd');
   String _vehicleType = 'TAXI';
-  double _fareOffer = 0;
+  double _fareOffer = 165; // Default to middle of range
   bool _estimateLoaded = false;
+  static const double _minFare = 80;
+  static const double _maxFare = 250;
 
   // Mock coordinates
   final double _pickupLat = 13.7469;
@@ -54,6 +56,14 @@ class _RideRequestScreenState extends State<RideRequestScreen> {
     if (success && ride.fareEstimate != null) {
       setState(() {
         _fareOffer = (ride.fareEstimate!['recommendedFare'] as num).toDouble();
+        // Clamp to 80-250 range
+        _fareOffer = _fareOffer.clamp(_minFare, _maxFare);
+        _estimateLoaded = true;
+      });
+    } else {
+      // Use default range if estimate fails
+      setState(() {
+        _fareOffer = (_minFare + _maxFare) / 2;
         _estimateLoaded = true;
       });
     }
@@ -62,7 +72,10 @@ class _RideRequestScreenState extends State<RideRequestScreen> {
   Future<void> _submitRequest() async {
     final ride = Provider.of<RideProvider>(context, listen: false);
     final estimate = ride.fareEstimate;
-    if (estimate == null) return;
+
+    // Use provided estimate or default range
+    final fareMin = estimate != null ? (estimate['fareMin'] as num).toDouble() : _minFare;
+    final fareMax = estimate != null ? (estimate['fareMax'] as num).toDouble() : _maxFare;
 
     final success = await ride.createRideRequest(
       vehicleType: _vehicleType,
@@ -72,8 +85,8 @@ class _RideRequestScreenState extends State<RideRequestScreen> {
       dropoffLat: _dropoffLat,
       dropoffLng: _dropoffLng,
       dropoffAddress: _dropoffController.text,
-      fareMin: (estimate['fareMin'] as num).toDouble(),
-      fareMax: (estimate['fareMax'] as num).toDouble(),
+      fareMin: fareMin,
+      fareMax: fareMax,
       fareOffer: _fareOffer,
     );
 
@@ -303,8 +316,8 @@ class _RideRequestScreenState extends State<RideRequestScreen> {
                         const SizedBox(height: 12),
                         Slider(
                           value: _fareOffer,
-                          min: (estimate['fareMin'] as num).toDouble(),
-                          max: (estimate['fareMax'] as num).toDouble(),
+                          min: _minFare,
+                          max: _maxFare,
                           activeColor: FairGoTheme.primaryCyan,
                           inactiveColor: FairGoTheme.primaryCyan.withValues(alpha: 0.2),
                           onChanged: (value) {
@@ -315,11 +328,11 @@ class _RideRequestScreenState extends State<RideRequestScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              '฿${estimate['fareMin']}',
+                              '฿${_minFare.toStringAsFixed(0)}',
                               style: const TextStyle(fontSize: 12, color: FairGoTheme.textSecondary),
                             ),
                             Text(
-                              '฿${estimate['fareMax']}',
+                              '฿${_maxFare.toStringAsFixed(0)}',
                               style: const TextStyle(fontSize: 12, color: FairGoTheme.textSecondary),
                             ),
                           ],

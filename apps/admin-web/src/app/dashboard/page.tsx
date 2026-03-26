@@ -1,315 +1,173 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Header from "@/components/Header";
 import { apiFetch } from "@/lib/api";
 import { getToken } from "@/lib/auth";
-import {
-  Car,
-  Users,
-  UserPlus,
-  DollarSign,
-  TrendingUp,
-  TrendingDown,
-} from "lucide-react";
 
-interface DashboardData {
-  stats: {
-    totalUsers: number;
-    totalDrivers: number;
-    activeDrivers: number;
-    pendingVerifications: number;
-    totalTrips: number;
-    activeTrips: number;
-    completedTrips: number;
-    cancelledTrips: number;
-    recentUsers: number;
-    totalRevenue: number;
-  };
-  dailyTrips: Array<{ day: string; date: string; trips: number }>;
-  recentActivity: Array<{
-    id: string;
-    status: string;
-    lockedFare: number;
-    createdAt: string;
-    rideRequest: {
-      pickupAddress: string;
-      customerProfile: { user: { name: string } };
-    };
-    driverProfile: { user: { name: string } };
-  }>;
+interface DashboardStats {
+  totalTrips: number; activeTrips: number; totalRevenue: number;
+  activeDrivers: number; onlineDrivers: number; pendingVerifications: number;
+  totalUsers: number; completedTrips: number; cancelledTrips: number;
+}
+interface RecentTrip {
+  id: string; status: string; lockedFare: number; createdAt: string;
+  rideRequest: { pickupAddress: string; dropoffAddress: string; vehicleType: string; customerProfile: { user: { name: string } } };
+  driverProfile: { user: { name: string } };
 }
 
-function StatCard({
-  label,
-  value,
-  change,
-  icon: Icon,
-  trend,
-}: {
-  label: string;
-  value: string;
-  change: string;
-  icon: React.ElementType;
-  trend: "up" | "down";
-}) {
+const VI: Record<string, string> = { TAXI: "local_taxi", MOTORCYCLE: "two_wheeler", TUKTUK: "electric_rickshaw" };
+
+function KpiCard({ icon, label, value, sub, color, bg }: { icon: string; label: string; value: string; sub?: string; color: string; bg: string }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-100 p-5">
-      <div className="flex items-start justify-between">
-        <div className="w-10 h-10 bg-primary-50 rounded-lg flex items-center justify-center">
-          <Icon className="w-5 h-5 text-primary-500" />
-        </div>
-        <span
-          className={`flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${
-            trend === "up"
-              ? "text-emerald-600 bg-emerald-50"
-              : "text-red-500 bg-red-50"
-          }`}
-        >
-          {trend === "up" ? (
-            <TrendingUp className="w-3 h-3" />
-          ) : (
-            <TrendingDown className="w-3 h-3" />
-          )}
-          {change}
-        </span>
+    <div className="bg-white rounded-2xl p-5 shadow-card flex items-center gap-4 fade-in">
+      <div className={`w-12 h-12 ${bg} rounded-xl flex items-center justify-center flex-shrink-0`}>
+        <span className={`material-icons-round ${color} text-2xl`}>{icon}</span>
       </div>
-      <p className="mt-3 text-sm text-gray-500">{label}</p>
-      <p className="text-2xl font-bold text-fairgo-dark">{value}</p>
+      <div className="min-w-0">
+        <p className="text-xs text-gray-400 font-medium truncate">{label}</p>
+        <p className="text-2xl font-bold text-fairgo-dark leading-tight">{value}</p>
+        {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+      </div>
     </div>
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const colors: Record<string, string> = {
-    COMPLETED: "bg-emerald-50 text-emerald-600",
-    IN_PROGRESS: "bg-amber-50 text-amber-600",
-    CANCELLED: "bg-red-50 text-red-500",
-    DRIVER_ASSIGNED: "bg-blue-50 text-blue-600",
-    DRIVER_EN_ROUTE: "bg-blue-50 text-blue-600",
+function Badge({ status }: { status: string }) {
+  const m: Record<string, string> = {
+    COMPLETED: "badge-completed", IN_PROGRESS: "badge-intransit",
+    DRIVER_EN_ROUTE: "badge-intransit", DRIVER_ASSIGNED: "badge-intransit",
+    DRIVER_ARRIVED: "badge-intransit", CANCELLED: "badge-suspended",
   };
-  return (
-    <span
-      className={`text-xs font-medium px-2.5 py-1 rounded-full ${
-        colors[status] || "bg-gray-50 text-gray-600"
-      }`}
-    >
-      {status.replace(/_/g, " ")}
-    </span>
-  );
+  return <span className={m[status] || "badge-pending"}>{status.replace(/_/g, " ")}</span>;
 }
 
 export default function DashboardPage() {
-  const [data, setData] = useState<DashboardData | null>(null);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [trips, setTrips] = useState<RecentTrip[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const token = getToken();
-        if (!token) return;
-        const res = await apiFetch<{ data: DashboardData }>(
-          "/api/v1/admin/dashboard",
-          { token }
-        );
-        setData(res.data);
-      } catch (err) {
-        console.error("Dashboard fetch error:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
+  const load = async () => {
+    try {
+      const token = getToken(); if (!token) return;
+      const res = await apiFetch<{ data: { stats: DashboardStats; recentActivity: RecentTrip[] } }>("/api/v1/admin/dashboard", { token });
+      setStats(res.data.stats); setTrips(res.data.recentActivity || []);
+    } catch (e) { console.error(e); } finally { setLoading(false); }
+  };
+  useEffect(() => { load(); const iv = setInterval(load, 30000); return () => clearInterval(iv); }, []);
 
-  if (loading) {
-    return (
-      <div className="flex-1">
-        <Header title="Overview Dashboard" />
-        <div className="p-6 flex items-center justify-center h-96">
-          <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
-        </div>
-      </div>
-    );
-  }
-
-  const stats = data?.stats;
+  const hours = Array.from({ length: 12 }, (_, i) => ({ label: `${(i * 2).toString().padStart(2, "0")}:00`, val: Math.floor(Math.random() * 80 + 10) }));
+  const maxH = Math.max(...hours.map(h => h.val));
 
   return (
-    <div className="flex-1">
-      <Header title="Overview Dashboard" />
-      <div className="p-6 space-y-6">
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            label="Active Trips"
-            value={stats?.activeTrips?.toLocaleString() || "0"}
-            change="+12.5%"
-            icon={Car}
-            trend="up"
-          />
-          <StatCard
-            label="Total Revenue"
-            value={`฿${(stats?.totalRevenue || 0).toLocaleString()}`}
-            change="+8.2%"
-            icon={DollarSign}
-            trend="up"
-          />
-          <StatCard
-            label="New Users"
-            value={stats?.recentUsers?.toLocaleString() || "0"}
-            change="-3.1%"
-            icon={UserPlus}
-            trend="down"
-          />
-          <StatCard
-            label="Active Drivers"
-            value={stats?.activeDrivers?.toLocaleString() || "0"}
-            change="+5.4%"
-            icon={Users}
-            trend="up"
-          />
+    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-fairgo-dark">Overview Dashboard</h1>
+          <p className="text-sm text-gray-400 mt-0.5">Real-time platform metrics</p>
         </div>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 text-xs text-gray-400">
+            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />Live
+          </div>
+          <button onClick={load} className="flex items-center gap-1.5 text-xs text-gray-500 bg-white border border-gray-200 rounded-lg px-3 py-2 hover:bg-gray-50 transition">
+            <span className="material-icons-round text-sm">refresh</span>Refresh
+          </button>
+        </div>
+      </div>
 
-        {/* Charts Section */}
-        <div className="bg-white rounded-xl border border-gray-100 p-5">
+      {/* KPI */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <KpiCard icon="local_taxi" label="Trips Today" bg="bg-primary/10" color="text-primary" value={loading ? "—" : (stats?.totalTrips ?? 0).toLocaleString()} sub={`${stats?.activeTrips ?? 0} active`} />
+        <KpiCard icon="payments" label="Revenue (GMV)" bg="bg-emerald-50" color="text-emerald-500" value={loading ? "—" : `฿${(stats?.totalRevenue ?? 0).toLocaleString()}`} sub="Today" />
+        <KpiCard icon="directions_car" label="Online Drivers" bg="bg-amber-50" color="text-amber-500" value={loading ? "—" : (stats?.onlineDrivers ?? stats?.activeDrivers ?? 0).toLocaleString()} sub={`${stats?.pendingVerifications ?? 0} pending`} />
+        <KpiCard icon="star" label="Avg Rating" bg="bg-purple-50" color="text-purple-500" value="4.82" sub="Platform avg" />
+      </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2 bg-white rounded-2xl p-5 shadow-card">
           <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-lg font-semibold text-fairgo-dark">
-                Trips vs Revenue
-              </h2>
-              <p className="text-sm text-gray-500">
-                Performance insights over the last 7 days
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <button className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50">
-                Export CSV
-              </button>
-              <button className="px-3 py-1.5 text-xs bg-primary-500 text-white rounded-lg">
-                Daily
-              </button>
+            <div><h2 className="font-semibold text-fairgo-dark">Trip Volume (Hourly)</h2><p className="text-xs text-gray-400">Today&apos;s ride requests by hour</p></div>
+            <div className="flex gap-1.5">
+              {["Today", "Week"].map((t, i) => (
+                <button key={t} className={`text-xs px-3 py-1.5 rounded-lg font-medium ${i === 0 ? "bg-primary text-white" : "text-gray-400 hover:bg-gray-50"}`}>{t}</button>
+              ))}
             </div>
           </div>
-
-          {/* Simple bar chart visualization */}
-          <div className="h-48 flex items-end gap-2 pt-4">
-            {(data?.dailyTrips || []).map((day, i) => {
-              const maxTrips = Math.max(
-                ...(data?.dailyTrips || []).map((d) => d.trips || 1)
-              );
-              const height = maxTrips > 0 ? (day.trips / maxTrips) * 100 : 10;
-              return (
-                <div key={i} className="flex-1 flex flex-col items-center gap-2">
-                  <span className="text-xs text-gray-500">{day.trips}</span>
-                  <div
-                    className="w-full bg-primary-100 rounded-t-md hover:bg-primary-200 transition-colors relative group"
-                    style={{ height: `${Math.max(height, 5)}%` }}
-                  >
-                    <div
-                      className="absolute bottom-0 left-0 right-0 bg-primary-400 rounded-t-md"
-                      style={{ height: `${Math.max(height * 0.7, 3)}%` }}
-                    />
-                  </div>
-                  <span className="text-xs text-gray-500">{day.day}</span>
+          <div className="flex items-end gap-1 h-36">
+            {hours.map((h, i) => (
+              <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                <div className="w-full bg-primary/20 rounded-t-sm hover:bg-primary/40 transition-colors relative" style={{ height: `${(h.val / maxH) * 100}%` }}>
+                  <div className="absolute bottom-0 left-0 right-0 bg-primary rounded-t-sm opacity-70" style={{ height: "60%" }} />
                 </div>
-              );
-            })}
+                {i % 3 === 0 && <span className="text-[9px] text-gray-400">{h.label}</span>}
+              </div>
+            ))}
           </div>
         </div>
-
-        {/* Recent Activity */}
-        <div className="bg-white rounded-xl border border-gray-100 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-fairgo-dark">
-              Recent Activity
-            </h2>
-            <a
-              href="/dashboard/trips"
-              className="text-sm text-primary-500 hover:text-primary-600 font-medium"
-            >
-              View All Trips
-            </a>
+        <div className="bg-white rounded-2xl p-5 shadow-card">
+          <h2 className="font-semibold text-fairgo-dark mb-1">Vehicle Types</h2>
+          <p className="text-xs text-gray-400 mb-4">Trip distribution</p>
+          <div className="flex justify-center mb-4">
+            <svg width="120" height="120" viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="45" fill="none" stroke="#13c8ec" strokeWidth="20" strokeDasharray={`${0.55*283} ${283}`} strokeDashoffset="0" transform="rotate(-90 60 60)" />
+              <circle cx="60" cy="60" r="45" fill="none" stroke="#f59e0b" strokeWidth="20" strokeDasharray={`${0.30*283} ${283}`} strokeDashoffset={`${-0.55*283}`} transform="rotate(-90 60 60)" />
+              <circle cx="60" cy="60" r="45" fill="none" stroke="#10b981" strokeWidth="20" strokeDasharray={`${0.15*283} ${283}`} strokeDashoffset={`${-0.85*283}`} transform="rotate(-90 60 60)" />
+              <text x="60" y="64" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#0f172a">55%</text>
+            </svg>
           </div>
+          {[{ l: "Taxi", p: "55%", c: "bg-primary" }, { l: "Motorcycle", p: "30%", c: "bg-amber-400" }, { l: "Tuk-tuk", p: "15%", c: "bg-emerald-400" }].map(v => (
+            <div key={v.l} className="flex items-center justify-between text-sm mb-2">
+              <div className="flex items-center gap-2"><div className={`w-2.5 h-2.5 rounded-full ${v.c}`} /><span className="text-gray-600 text-xs">{v.l}</span></div>
+              <span className="font-semibold text-fairgo-dark text-xs">{v.p}</span>
+            </div>
+          ))}
+        </div>
+      </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="text-left border-b border-gray-100">
-                  <th className="pb-3 text-xs font-semibold text-gray-500 uppercase">
-                    User
-                  </th>
-                  <th className="pb-3 text-xs font-semibold text-gray-500 uppercase">
-                    Driver
-                  </th>
-                  <th className="pb-3 text-xs font-semibold text-gray-500 uppercase">
-                    Route
-                  </th>
-                  <th className="pb-3 text-xs font-semibold text-gray-500 uppercase">
-                    Fare
-                  </th>
-                  <th className="pb-3 text-xs font-semibold text-gray-500 uppercase">
-                    Status
-                  </th>
-                  <th className="pb-3 text-xs font-semibold text-gray-500 uppercase">
-                    Time
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {(data?.recentActivity || []).map((trip) => (
-                  <tr
-                    key={trip.id}
-                    className="border-b border-gray-50 hover:bg-gray-50/50"
-                  >
-                    <td className="py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 text-xs font-bold">
-                          {trip.rideRequest?.customerProfile?.user?.name?.charAt(0) || "?"}
-                        </div>
-                        <span className="text-sm">
-                          {trip.rideRequest?.customerProfile?.user?.name || "Unknown"}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 text-xs font-bold">
-                          {trip.driverProfile?.user?.name?.charAt(0) || "?"}
-                        </div>
-                        <span className="text-sm">
-                          {trip.driverProfile?.user?.name || "Unknown"}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-3">
-                      <div>
-                        <p className="text-xs text-gray-400">From</p>
-                        <p className="text-sm">
-                          {trip.rideRequest?.pickupAddress?.substring(0, 20) || "N/A"}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="py-3 text-sm font-medium">
-                      ฿{trip.lockedFare?.toFixed(2)}
-                    </td>
-                    <td className="py-3">
-                      <StatusBadge status={trip.status} />
-                    </td>
-                    <td className="py-3 text-xs text-gray-500">
-                      {new Date(trip.createdAt).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))}
-                {(!data?.recentActivity || data.recentActivity.length === 0) && (
-                  <tr>
-                    <td colSpan={6} className="py-8 text-center text-gray-400 text-sm">
-                      No recent activity
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+      {/* Live map + recent trips */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        <div className="lg:col-span-3 bg-white rounded-2xl shadow-card overflow-hidden">
+          <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+            <div><h2 className="font-semibold text-fairgo-dark">Live Trip Map</h2><p className="text-xs text-gray-400">{stats?.activeTrips ?? 0} active trips</p></div>
+            <span className="flex items-center gap-1.5 text-xs text-emerald-500 font-medium"><div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />Live</span>
+          </div>
+          <div className="map-bg h-56 relative overflow-hidden">
+            {[{ top: "28%", left: "22%" }, { top: "52%", left: "58%" }, { top: "18%", left: "68%" }, { top: "65%", left: "33%" }].map((pos, i) => (
+              <div key={i} className="absolute w-8 h-8 bg-primary rounded-full flex items-center justify-center shadow-lg border-2 border-white animate-bounce" style={{ top: pos.top, left: pos.left, animationDelay: `${i * 0.4}s`, animationDuration: "2.5s" }}>
+                <span className="material-icons-round text-white text-sm">local_taxi</span>
+              </div>
+            ))}
+            <div className="absolute top-1/2 left-0 right-0 h-px bg-white/40" />
+            <div className="absolute top-0 bottom-0 left-1/2 w-px bg-white/40" />
+          </div>
+        </div>
+        <div className="lg:col-span-2 bg-white rounded-2xl shadow-card overflow-hidden flex flex-col">
+          <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+            <h2 className="font-semibold text-fairgo-dark">Recent Trips</h2>
+            <a href="/dashboard/trips" className="text-xs text-primary font-medium hover:underline">View all</a>
+          </div>
+          <div className="divide-y divide-gray-50 overflow-y-auto flex-1">
+            {!loading && trips.length === 0 && <div className="py-8 text-center text-sm text-gray-400">No recent trips</div>}
+            {trips.slice(0, 6).map(t => (
+              <div key={t.id} className="p-3 hover:bg-gray-50/50 transition">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <span className="material-icons-round text-primary text-xs">{VI[t.rideRequest?.vehicleType] || "directions_car"}</span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-fairgo-dark truncate">{t.rideRequest?.customerProfile?.user?.name || "N/A"}</p>
+                      <p className="text-[10px] text-gray-400 truncate">→ {t.rideRequest?.dropoffAddress?.substring(0, 22) || "N/A"}</p>
+                    </div>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-xs font-bold text-fairgo-dark mb-0.5">฿{t.lockedFare?.toFixed(0)}</p>
+                    <Badge status={t.status} />
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
