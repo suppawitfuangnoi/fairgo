@@ -23,19 +23,17 @@ export async function POST(request: NextRequest) {
       return errorResponse("Invalid credentials", 401);
     }
 
-    // For development: accept "admin123" as default password
-    // In production, store hashed passwords properly
-    const isValidPassword =
-      process.env.NODE_ENV === "production"
-        ? false // Must implement proper password storage
-        : password === "admin123" ||
-          (user.adminProfile?.permissions &&
-            typeof user.adminProfile.permissions === "object" &&
-            "passwordHash" in (user.adminProfile.permissions as Record<string, unknown>) &&
-            (await bcrypt.compare(
-              password,
-              (user.adminProfile.permissions as Record<string, unknown>).passwordHash as string
-            )));
+    // Check password: bcrypt hash stored in permissions takes priority,
+    // then fall back to ADMIN_PASSWORD env var, then default "admin123"
+    const permissions = user.adminProfile?.permissions as Record<string, unknown> | null;
+    const storedHash =
+      permissions && "passwordHash" in permissions
+        ? (permissions.passwordHash as string)
+        : null;
+
+    const isValidPassword = storedHash
+      ? await bcrypt.compare(password, storedHash)
+      : password === (process.env.ADMIN_PASSWORD ?? "admin123");
 
     if (!isValidPassword) {
       return errorResponse("Invalid credentials", 401);
