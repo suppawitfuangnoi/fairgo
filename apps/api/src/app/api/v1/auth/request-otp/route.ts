@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     if ("error" in result) return result.error;
 
     const { phone } = result.data;
-    generateOTP(phone);
+    await generateOTP(phone);
 
     return successResponse(
       { phone, message: "OTP sent successfully" },
