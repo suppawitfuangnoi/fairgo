@@ -1,5 +1,6 @@
 {
   "framework": "nextjs",
-  "buildCommand": "./node_modules/.bin/prisma generate --schema=../../prisma/schema.prisma && next build",
+  "installCommand": "NODE_ENV=development pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm db:generate && next build",
   "outputDirectory": ".next"
 }
