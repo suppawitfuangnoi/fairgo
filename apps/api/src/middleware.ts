@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const ALLOWED_ORIGINS = [
+const STATIC_ORIGINS = [
   "http://localhost:3000",
   "http://localhost:3001",
   "http://localhost:4000",
@@ -8,9 +8,23 @@ const ALLOWED_ORIGINS = [
   "http://localhost:8081",
 ];
 
+function getAllowedOrigins(): string[] {
+  const origins = [...STATIC_ORIGINS];
+  if (process.env.ADMIN_WEB_URL) {
+    origins.push(process.env.ADMIN_WEB_URL.replace(/\/$/, ""));
+  }
+  if (process.env.CUSTOMER_APP_URL && process.env.CUSTOMER_APP_URL !== "*") {
+    origins.push(process.env.CUSTOMER_APP_URL.replace(/\/$/, ""));
+  }
+  return origins;
+}
+
 export function middleware(request: NextRequest) {
   const origin = request.headers.get("origin") || "";
-  const isAllowed = ALLOWED_ORIGINS.includes(origin) || !origin;
+  const isAllowed =
+    getAllowedOrigins().includes(origin) ||
+    !origin ||
+    process.env.CUSTOMER_APP_URL === "*";
 
   // Handle preflight OPTIONS requests
   if (request.method === "OPTIONS") {
