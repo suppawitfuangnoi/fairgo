@@ -588,3 +588,15 @@ model AuditLog {
   @@index([createdAt])
   @@map("audit_logs")
 }
+
+model OtpCode {
+  id        String   @id @default(cuid())
+  phone     String
+  code      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([phone])
+  @@index([expiresAt])
+  @@map("otp_codes")
+}
