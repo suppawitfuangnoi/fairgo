@@ -1,4 +1,5 @@
 import { PrismaClient, UserRole, VehicleType } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
@@ -30,6 +31,8 @@ async function main() {
   await prisma.user.deleteMany();
 
   // ==================== ADMIN USER ====================
+  const adminPassword = process.env.ADMIN_PASSWORD ?? "admin123";
+  const passwordHash = await bcrypt.hash(adminPassword, 10);
   const admin = await prisma.user.create({
     data: {
       phone: "+66800000001",
@@ -40,6 +43,7 @@ async function main() {
         create: {
           department: "Operations",
           permissions: {
+            passwordHash,
             users: true,
             drivers: true,
             trips: true,
