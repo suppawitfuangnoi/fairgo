@@ -1,10 +1,11 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
-    "builder": "NIXPACKS"
+    "builder": "NIXPACKS",
+    "buildCommand": "NODE_ENV=development pnpm install --frozen-lockfile"
   },
   "deploy": {
-    "startCommand": "node -r ts-node/register server.ts",
+    "startCommand": "node_modules/.bin/ts-node --project tsconfig.server.json server.ts",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }

@@ -1,11 +1,6 @@
 {
   "framework": "nextjs",
-  "buildCommand": "next build",
-  "outputDirectory": ".next",
-  "installCommand": "npm install",
-  "env": {
-    "DATABASE_URL": "@fairgo-database-url",
-    "JWT_SECRET": "@fairgo-jwt-secret",
-    "JWT_REFRESH_SECRET": "@fairgo-jwt-refresh-secret"
-  }
+  "installCommand": "NODE_ENV=development pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm db:generate && next build",
+  "outputDirectory": ".next"
 }
