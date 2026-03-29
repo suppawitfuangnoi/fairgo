@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../config/theme.dart';
 import '../providers/ride_provider.dart';
+import '../providers/locale_provider.dart';
 
 class RatingScreen extends StatefulWidget {
   const RatingScreen({super.key});
@@ -12,19 +13,10 @@ class RatingScreen extends StatefulWidget {
 
 class _RatingScreenState extends State<RatingScreen> {
   int _stars = 5;
-  final Set<String> _selectedChips = {'ราคาแฟร์'};
+  final Set<int> _selectedIndices = {0};
   final _commentController = TextEditingController();
   bool _addToFavorites = false;
   bool _submitting = false;
-
-  final List<String> _chips = [
-    'ราคาแฟร์',
-    'คนขับมีมารยาท',
-    'รถสะอาด',
-    'ขับปลอดภัย',
-    'เส้นทางรวดเร็ว',
-    'เพลงเพราะ',
-  ];
 
   @override
   void dispose() {
@@ -32,20 +24,32 @@ class _RatingScreenState extends State<RatingScreen> {
     super.dispose();
   }
 
+  List<String> _getChips(AppTranslations t) => [
+    t.ratingChipFairPrice,
+    t.ratingChipFriendly,
+    t.ratingChipClean,
+    t.ratingChipSafe,
+    t.ratingChipQuick,
+    t.ratingChipMusic,
+  ];
+
   Future<void> _submit() async {
     final trip =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     if (trip == null) return;
+    final t = context.read<LocaleProvider>().t;
     setState(() => _submitting = true);
 
     try {
+      final chips = _getChips(t);
+      final selectedChipsText = _selectedIndices.map((i) => chips[i]).toList().join(', ');
       final ride = Provider.of<RideProvider>(context, listen: false);
       await ride.submitRating(
         tripId: trip['id'],
         rating: _stars,
         comment: _commentController.text.isNotEmpty
             ? _commentController.text
-            : _selectedChips.join(', '),
+            : selectedChipsText,
       );
     } catch (_) {}
 
@@ -56,6 +60,9 @@ class _RatingScreenState extends State<RatingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.watch<LocaleProvider>().t;
+    final chips = _getChips(t);
+
     final trip =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     final driver = trip?['driverProfile'];
@@ -70,9 +77,9 @@ class _RatingScreenState extends State<RatingScreen> {
       appBar: AppBar(
         backgroundColor: FairGoTheme.primaryCyan,
         elevation: 0,
-        title: const Text(
-          'การเดินทางสิ้นสุดแล้ว',
-          style: TextStyle(
+        title: Text(
+          t.ratingAppBarTitle,
+          style: const TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w800,
             letterSpacing: 2,
@@ -113,9 +120,9 @@ class _RatingScreenState extends State<RatingScreen> {
             const SizedBox(height: 14),
 
             // "How was your ride?"
-            const Text(
-              'การเดินทางเป็นอย่างไรบ้าง?',
-              style: TextStyle(
+            Text(
+              t.ratingHowWas,
+              style: const TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
                 color: FairGoTheme.textPrimary,
@@ -123,7 +130,7 @@ class _RatingScreenState extends State<RatingScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              'with $driverName',
+              t.ratingWith(driverName),
               style: const TextStyle(
                   fontSize: 14, color: FairGoTheme.textSecondary),
             ),
@@ -180,15 +187,17 @@ class _RatingScreenState extends State<RatingScreen> {
               spacing: 8,
               runSpacing: 8,
               alignment: WrapAlignment.center,
-              children: _chips.map((chip) {
-                final selected = _selectedChips.contains(chip);
+              children: chips.asMap().entries.map((entry) {
+                final index = entry.key;
+                final chip = entry.value;
+                final selected = _selectedIndices.contains(index);
                 return GestureDetector(
                   onTap: () {
                     setState(() {
                       if (selected) {
-                        _selectedChips.remove(chip);
+                        _selectedIndices.remove(index);
                       } else {
-                        _selectedChips.add(chip);
+                        _selectedIndices.add(index);
                       }
                     });
                   },
@@ -226,7 +235,7 @@ class _RatingScreenState extends State<RatingScreen> {
               controller: _commentController,
               maxLines: 3,
               decoration: InputDecoration(
-                hintText: 'บอกเพิ่มเติมเกี่ยวกับการเดินทาง...',
+                hintText: t.ratingCommentHint,
                 hintStyle: const TextStyle(
                     fontSize: 13, color: Color(0xFFBDBDBD)),
                 filled: true,
@@ -260,10 +269,10 @@ class _RatingScreenState extends State<RatingScreen> {
                   const Icon(Icons.favorite_border_rounded,
                       color: FairGoTheme.danger, size: 20),
                   const SizedBox(width: 10),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'เพิ่มคนขับเป็นรายการโปรด',
-                      style: TextStyle(
+                      t.ratingAddFavorite,
+                      style: const TextStyle(
                           fontSize: 14, fontWeight: FontWeight.w500),
                     ),
                   ),
@@ -299,9 +308,9 @@ class _RatingScreenState extends State<RatingScreen> {
                           color: Colors.white,
                         ),
                       )
-                    : const Text(
-                        'ส่งข้อเสนอแนะ',
-                        style: TextStyle(
+                    : Text(
+                        t.ratingSubmit,
+                        style: const TextStyle(
                             fontSize: 16, fontWeight: FontWeight.bold),
                       ),
               ),
@@ -310,9 +319,9 @@ class _RatingScreenState extends State<RatingScreen> {
             TextButton(
               onPressed: () => Navigator.pushNamedAndRemoveUntil(
                   context, '/home', (route) => false),
-              child: const Text(
-                'ข้ามไปก่อน',
-                style: TextStyle(color: FairGoTheme.textSecondary),
+              child: Text(
+                t.ratingSkip,
+                style: const TextStyle(color: FairGoTheme.textSecondary),
               ),
             ),
           ],

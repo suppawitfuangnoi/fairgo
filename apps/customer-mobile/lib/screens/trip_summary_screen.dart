@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../config/theme.dart';
+import '../providers/locale_provider.dart';
 
 class TripSummaryScreen extends StatelessWidget {
   const TripSummaryScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final t = context.watch<LocaleProvider>().t;
     final trip =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
@@ -56,9 +59,9 @@ class TripSummaryScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'ถึงจุดหมายแล้ว!',
-                  style: TextStyle(
+                Text(
+                  t.summaryArrived,
+                  style: const TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -66,7 +69,7 @@ class TripSummaryScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'ขอบคุณที่ใช้บริการ FAIRGO',
+                  t.summaryThankYou,
                   style: TextStyle(
                     fontSize: 13,
                     color: Colors.white.withValues(alpha: 0.85),
@@ -84,7 +87,7 @@ class TripSummaryScreen extends StatelessWidget {
                   child: Column(
                     children: [
                       Text(
-                        'ชำระแล้ว',
+                        t.summaryTotalPaid,
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.white.withValues(alpha: 0.8),
@@ -129,6 +132,7 @@ class TripSummaryScreen extends StatelessWidget {
                           time: createdAt.length >= 16
                               ? createdAt.substring(11, 16)
                               : '',
+                          label: t.summaryPickupLabel,
                         ),
                         const Padding(
                           padding: EdgeInsets.only(left: 4),
@@ -150,6 +154,7 @@ class TripSummaryScreen extends StatelessWidget {
                           time: updatedAt.length >= 16
                               ? updatedAt.substring(11, 16)
                               : '',
+                          label: t.summaryDropoffLabel,
                         ),
                       ],
                     ),
@@ -232,18 +237,18 @@ class TripSummaryScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'รายละเอียดการชำระ',
-                          style: TextStyle(
+                        Text(
+                          t.summaryPaymentBreakdown,
+                          style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
                             color: FairGoTheme.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 12),
-                        _PaymentRow(label: 'ค่าโดยสารตกลง', amount: lockedFare),
-                        _PaymentRow(label: 'ส่วนแบ่งแพลตฟอร์ม (10%)', amount: platformFee, isDiscount: false, isSubInfo: true),
-                        _PaymentRow(label: 'คนขับได้รับ (90%)', amount: driverPayout, isDiscount: false, isSubInfo: true),
+                        _PaymentRow(label: t.summaryAgreedFare, amount: lockedFare),
+                        _PaymentRow(label: t.summaryPlatformFee, amount: platformFee, isDiscount: false, isSubInfo: true),
+                        _PaymentRow(label: t.summaryDriverPayout, amount: driverPayout, isDiscount: false, isSubInfo: true),
                         if (promo < 0)
                           _PaymentRow(
                             label: 'ส่วนลดโปรโมชัน',
@@ -254,9 +259,9 @@ class TripSummaryScreen extends StatelessWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
-                              'รวมทั้งหมด',
-                              style: TextStyle(
+                            Text(
+                              t.summaryTotal,
+                              style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -292,9 +297,9 @@ class TripSummaryScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(16)),
                         elevation: 0,
                       ),
-                      child: const Text(
-                        'กลับหน้าหลัก',
-                        style: TextStyle(
+                      child: Text(
+                        t.summaryGoHome,
+                        style: const TextStyle(
                             fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                     ),
@@ -316,9 +321,9 @@ class TripSummaryScreen extends StatelessWidget {
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16)),
                       ),
-                      child: const Text(
-                        'ให้คะแนนคนขับ',
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                      child: Text(
+                        t.summaryRateDriver,
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                       ),
                     ),
                   ),
@@ -337,12 +342,14 @@ class _RouteRow extends StatelessWidget {
   final Color iconColor;
   final String address;
   final String time;
+  final String label;
 
   const _RouteRow({
     required this.icon,
     required this.iconColor,
     required this.address,
     required this.time,
+    this.label = '',
   });
 
   @override

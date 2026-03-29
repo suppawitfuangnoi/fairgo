@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { apiFetch } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import { useLang } from "@/lib/lang-context";
 
 interface AnalyticsData {
   period: string;
@@ -68,6 +69,7 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState("7d");
   const [error, setError] = useState("");
+  const { t } = useLang();
 
   const load = useCallback(async (p: string) => {
     setLoading(true);
@@ -99,8 +101,8 @@ export default function AnalyticsPage() {
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl font-bold text-fairgo-dark">Reports & Analytics</h1>
-          <p className="text-sm text-gray-400 mt-0.5">Platform performance data</p>
+          <h1 className="text-xl font-bold text-fairgo-dark">{t.analyticsReports}</h1>
+          <p className="text-sm text-gray-400 mt-0.5">{t.analyticsPlatformPerformance}</p>
         </div>
         <div className="flex gap-1.5">
           {PERIODS.map((p) => (
@@ -122,29 +124,29 @@ export default function AnalyticsPage() {
       )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon="local_taxi" label="Total Trips" bg="bg-primary/10" color="text-primary"
+        <StatCard icon="local_taxi" label={t.analyticsTotalTrips} bg="bg-primary/10" color="text-primary"
           value={loading ? "—" : (data?.overview.totalTrips ?? 0).toLocaleString()}
-          sub={`${data?.overview.completionRate ?? 0}% completion`} />
-        <StatCard icon="payments" label="Total GMV" bg="bg-emerald-50" color="text-emerald-500"
-          value={loading ? "—" : `฿${((data?.revenue.totalGMV ?? 0) / 1000).toFixed(1)}K`}
-          sub={`฿${((data?.revenue.totalCommission ?? 0) / 1000).toFixed(1)}K commission`} />
-        <StatCard icon="person_add" label="New Users" bg="bg-amber-50" color="text-amber-500"
+          sub={`${data?.overview.completionRate ?? 0}% ${t.analyticsCompletion}`} />
+        <StatCard icon="payments" label={t.analyticsTotalGMV} bg="bg-emerald-50" color="text-emerald-500"
+          value={loading ? "—" : `${t.baht}${((data?.revenue.totalGMV ?? 0) / 1000).toFixed(1)}K`}
+          sub={`${t.baht}${((data?.revenue.totalCommission ?? 0) / 1000).toFixed(1)}K ${t.analyticsCommission}`} />
+        <StatCard icon="person_add" label={t.analyticsNewUsers} bg="bg-amber-50" color="text-amber-500"
           value={loading ? "—" : (data?.overview.newUsers ?? 0).toLocaleString()}
-          sub={`${data?.overview.newDrivers ?? 0} new drivers`} />
-        <StatCard icon="star" label="Avg Rating" bg="bg-purple-50" color="text-purple-500"
+          sub={`${data?.overview.newDrivers ?? 0} ${t.analyticsNewDrivers}`} />
+        <StatCard icon="star" label={t.analyticsAvgRating} bg="bg-purple-50" color="text-purple-500"
           value={loading ? "—" : (data?.overview.avgRating ?? 0).toFixed(2)}
-          sub={`${(data?.overview.totalRatings ?? 0).toLocaleString()} ratings`} />
+          sub={`${(data?.overview.totalRatings ?? 0).toLocaleString()} ${t.analyticsRatings}`} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 bg-white rounded-2xl p-5 shadow-card">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="font-semibold text-fairgo-dark">Trip Volume by Day</h2>
-              <p className="text-xs text-gray-400">Trips trend over period</p>
+              <h2 className="font-semibold text-fairgo-dark">{t.analyticsTripVolumeByDay}</h2>
+              <p className="text-xs text-gray-400">{t.analyticsTripsTrend}</p>
             </div>
             {!loading && data && (
-              <span className="text-xs text-gray-400">GMV ฿{(data.revenue.totalGMV / 1000).toFixed(1)}K</span>
+              <span className="text-xs text-gray-400">GMV {t.baht}{(data.revenue.totalGMV / 1000).toFixed(1)}K</span>
             )}
           </div>
           {loading ? (
@@ -169,13 +171,13 @@ export default function AnalyticsPage() {
               ))}
             </div>
           ) : (
-            <div className="h-36 flex items-center justify-center text-sm text-gray-400">No data for this period</div>
+            <div className="h-36 flex items-center justify-center text-sm text-gray-400">{t.analyticsNoDataPeriod}</div>
           )}
         </div>
 
         <div className="bg-white rounded-2xl p-5 shadow-card">
-          <h2 className="font-semibold text-fairgo-dark mb-1">Top Pickup Zones</h2>
-          <p className="text-xs text-gray-400 mb-4">Most requested areas</p>
+          <h2 className="font-semibold text-fairgo-dark mb-1">{t.analyticsTopPickupZones}</h2>
+          <p className="text-xs text-gray-400 mb-4">{t.analyticsMostRequested}</p>
           {loading ? (
             <div className="space-y-3">{[1,2,3,4,5].map(i => <div key={i} className="h-8 bg-gray-100 rounded animate-pulse" />)}</div>
           ) : data && data.topZones.length > 0 ? (
@@ -201,8 +203,8 @@ export default function AnalyticsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-white rounded-2xl p-5 shadow-card">
-          <h2 className="font-semibold text-fairgo-dark mb-1">Vehicle Type Distribution</h2>
-          <p className="text-xs text-gray-400 mb-4">Trip share by vehicle</p>
+          <h2 className="font-semibold text-fairgo-dark mb-1">{t.analyticsVehicleTypeDistribution}</h2>
+          <p className="text-xs text-gray-400 mb-4">{t.analyticsTripShareByVehicle}</p>
           {loading ? <div className="h-32 bg-gray-100 rounded animate-pulse" /> :
             data && data.vehicleTypes.length > 0 ? (
               <div className="space-y-3">
@@ -225,13 +227,13 @@ export default function AnalyticsPage() {
                   );
                 })}
               </div>
-            ) : <div className="text-sm text-gray-400 text-center py-8">No vehicle data</div>
+            ) : <div className="text-sm text-gray-400 text-center py-8">{t.analyticsNoVehicleData}</div>
           }
         </div>
 
         <div className="bg-white rounded-2xl p-5 shadow-card">
-          <h2 className="font-semibold text-fairgo-dark mb-1">Payment Methods</h2>
-          <p className="text-xs text-gray-400 mb-4">Revenue by payment type</p>
+          <h2 className="font-semibold text-fairgo-dark mb-1">{t.analyticsPaymentMethods}</h2>
+          <p className="text-xs text-gray-400 mb-4">{t.analyticsRevenueByPayment}</p>
           {loading ? <div className="h-32 bg-gray-100 rounded animate-pulse" /> :
             data && data.paymentMethods.length > 0 ? (
               <div className="space-y-3">
@@ -254,14 +256,14 @@ export default function AnalyticsPage() {
                   );
                 })}
               </div>
-            ) : <div className="text-sm text-gray-400 text-center py-8">No payment data</div>
+            ) : <div className="text-sm text-gray-400 text-center py-8">{t.analyticsNoPaymentData}</div>
           }
         </div>
       </div>
 
       <div className="bg-white rounded-2xl p-5 shadow-card">
-        <h2 className="font-semibold text-fairgo-dark mb-1">Revenue Breakdown</h2>
-        <p className="text-xs text-gray-400 mb-4">Platform vs driver earnings split</p>
+        <h2 className="font-semibold text-fairgo-dark mb-1">{t.analyticsRevenueBreakdown}</h2>
+        <p className="text-xs text-gray-400 mb-4">{t.analyticsPlatformVsDriver}</p>
         {loading ? <div className="h-8 bg-gray-100 rounded animate-pulse" /> :
           data && data.revenue.totalGMV > 0 ? (
             <div className="space-y-3">
@@ -276,12 +278,12 @@ export default function AnalyticsPage() {
                 </div>
               </div>
               <div className="flex flex-wrap gap-4 text-xs text-gray-500">
-                <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-primary" />Platform: ฿{data.revenue.totalCommission.toLocaleString(undefined, {maximumFractionDigits: 0})}</div>
-                <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />Drivers: ฿{data.revenue.totalDriverEarnings.toLocaleString(undefined, {maximumFractionDigits: 0})}</div>
-                <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-gray-300" />Total GMV: ฿{data.revenue.totalGMV.toLocaleString(undefined, {maximumFractionDigits: 0})}</div>
+                <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-primary" />{t.analyticsPlatform}: {t.baht}{data.revenue.totalCommission.toLocaleString(undefined, {maximumFractionDigits: 0})}</div>
+                <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />{t.analyticsDrivers}: {t.baht}{data.revenue.totalDriverEarnings.toLocaleString(undefined, {maximumFractionDigits: 0})}</div>
+                <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-gray-300" />{t.analyticsTotalGMVLabel}: {t.baht}{data.revenue.totalGMV.toLocaleString(undefined, {maximumFractionDigits: 0})}</div>
               </div>
             </div>
-          ) : <div className="text-sm text-gray-400 text-center py-4">No revenue data yet</div>
+          ) : <div className="text-sm text-gray-400 text-center py-4">{t.analyticsNoRevenueData}</div>
         }
       </div>
     </div>

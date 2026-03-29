@@ -3,6 +3,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import '../config/theme.dart';
 import '../providers/job_provider.dart';
+import '../providers/locale_provider.dart';
 
 class SubmitOfferScreen extends StatefulWidget {
   const SubmitOfferScreen({super.key});
@@ -99,9 +100,10 @@ class _SubmitOfferScreenState extends State<SubmitOfferScreen> {
     );
 
     if (success && mounted) {
+      final t = Provider.of<LocaleProvider>(context, listen: false).t;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Offer submitted! Waiting for passenger response.'),
+        SnackBar(
+          content: Text(t.submitOfferSuccess),
           backgroundColor: FairGoTheme.success,
         ),
       );
@@ -111,6 +113,7 @@ class _SubmitOfferScreenState extends State<SubmitOfferScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.watch<LocaleProvider>().t;
     final ride = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     if (ride == null) {
       return const Scaffold(body: Center(child: Text('No ride data')));
@@ -122,7 +125,7 @@ class _SubmitOfferScreenState extends State<SubmitOfferScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Submit Offer'),
+        title: Text(t.submitOfferTitle),
         backgroundColor: FairGoTheme.primaryCyan,
       ),
       body: SingleChildScrollView(
@@ -190,8 +193,8 @@ class _SubmitOfferScreenState extends State<SubmitOfferScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Passenger offer: ฿${fareOffer.toStringAsFixed(0)}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: FairGoTheme.primaryCyan)),
-                      Text('Range: ฿${fareMin.toStringAsFixed(0)} - ฿${fareMax.toStringAsFixed(0)}', style: const TextStyle(fontSize: 12, color: FairGoTheme.textSecondary)),
+                      Text('${t.submitPassengerOffer}: ฿${fareOffer.toStringAsFixed(0)}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: FairGoTheme.primaryCyan)),
+                      Text('${t.submitFareRange}: ฿${fareMin.toStringAsFixed(0)} - ฿${fareMax.toStringAsFixed(0)}', style: const TextStyle(fontSize: 12, color: FairGoTheme.textSecondary)),
                     ],
                   ),
                   Row(
@@ -207,7 +210,7 @@ class _SubmitOfferScreenState extends State<SubmitOfferScreen> {
             const SizedBox(height: 24),
 
             // Your offer amount
-            const Text('Your Fare Offer', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+            Text(t.submitYourFareOffer, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(16),
@@ -244,7 +247,7 @@ class _SubmitOfferScreenState extends State<SubmitOfferScreen> {
             const SizedBox(height: 20),
 
             // ETA
-            const Text('Estimated Pickup Time', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+            Text(t.submitEtaTitle, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
             Row(
               children: [3, 5, 8, 10, 15].map((min) {
@@ -278,14 +281,14 @@ class _SubmitOfferScreenState extends State<SubmitOfferScreen> {
             const SizedBox(height: 20),
 
             // Message
-            const Text('Message (Optional)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+            Text(t.submitMessageTitle, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
             TextField(
               controller: _messageController,
               maxLines: 2,
-              decoration: const InputDecoration(
-                hintText: 'e.g., "I\'m nearby, can pick you up quickly!"',
-                hintStyle: TextStyle(fontSize: 13),
+              decoration: InputDecoration(
+                hintText: t.submitMessageHint,
+                hintStyle: const TextStyle(fontSize: 13),
               ),
             ),
             const SizedBox(height: 24),
@@ -304,7 +307,7 @@ class _SubmitOfferScreenState extends State<SubmitOfferScreen> {
                       onPressed: jobs.isLoading ? null : _submit,
                       child: jobs.isLoading
                           ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                          : Text('Submit Offer · ฿${_offerAmount.toStringAsFixed(0)}'),
+                          : Text(t.submitOfferButton(_offerAmount.toStringAsFixed(0))),
                     ),
                   ],
                 );

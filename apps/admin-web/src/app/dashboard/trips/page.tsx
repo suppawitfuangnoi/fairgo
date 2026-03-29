@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { useAdminSocket } from "@/hooks/useSocket";
+import { useLang } from "@/lib/lang-context";
 
 const LiveMap = dynamic(() => import("@/components/LiveMap"), { ssr: false, loading: () => (
   <div className="h-full flex items-center justify-center bg-slate-100">
@@ -47,6 +48,7 @@ export default function TripsPage() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Trip | null>(null);
   const { drivers, isConnected } = useAdminSocket();
+  const { t } = useLang();
 
   const load = async () => {
     try {
@@ -131,10 +133,10 @@ export default function TripsPage() {
         {/* Sidebar header */}
         <div className="p-5 border-b border-slate-100">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-slate-900">Ongoing Trips</h2>
+            <h2 className="text-lg font-bold text-slate-900">{t.tripsOngoingTrips}</h2>
             <button onClick={load} className="text-primary text-sm font-semibold flex items-center gap-1 hover:opacity-80">
               <span className="material-symbols-outlined text-sm">refresh</span>
-              Refresh
+              {t.refresh}
             </button>
           </div>
 
@@ -164,7 +166,7 @@ export default function TripsPage() {
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">filter_list</span>
             <input
               type="text"
-              placeholder="Filter by ID or Driver..."
+              placeholder={t.tripsSearchPlaceholder}
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition"
@@ -181,7 +183,7 @@ export default function TripsPage() {
           ) : filtered.length === 0 ? (
             <div className="py-12 text-center">
               <span className="material-symbols-outlined text-3xl text-slate-300 block mb-2">directions_car</span>
-              <p className="text-sm text-slate-400">No trips found</p>
+              <p className="text-sm text-slate-400">{t.tripsNoTrips}</p>
             </div>
           ) : (
             filtered.map(t => (
@@ -216,7 +218,7 @@ export default function TripsPage() {
                       {t.rideRequest?.pickupAddress?.split(",")[0] || "—"}
                     </p>
                     <p className="text-xs font-bold text-slate-800 truncate">
-                      {t.rideRequest?.dropoffAddress?.split(",")[0] || "—"}
+                      {trip.rideRequest?.dropoffAddress?.split(",")[0] || "—"}
                     </p>
                   </div>
                 </div>
@@ -251,10 +253,10 @@ export default function TripsPage() {
 
         {/* Footer: total count */}
         <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
-          <span className="text-xs text-slate-500">{filtered.length} trips shown</span>
+          <span className="text-xs text-slate-500">{filtered.length} {t.tripsTripsShown}</span>
           <span className={`flex items-center gap-1.5 text-xs font-medium ${isConnected ? "text-emerald-600" : "text-amber-600"}`}>
             <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? "bg-emerald-500 animate-pulse" : "bg-amber-400"}`} />
-            {isConnected ? "Live tracking" : "HTTP polling"}
+            {isConnected ? t.liveTracking : t.httpPolling}
           </span>
         </div>
       </aside>
@@ -285,11 +287,11 @@ export default function TripsPage() {
                   </div>
                   <div className="flex flex-col gap-2 flex-1">
                     <div>
-                      <p className="text-[10px] text-slate-400 uppercase font-bold">Pickup</p>
+                      <p className="text-[10px] text-slate-400 uppercase font-bold">{t.tripsPickup}</p>
                       <p className="text-sm font-medium text-slate-900">{selected.rideRequest?.pickupAddress || "—"}</p>
                     </div>
                     <div>
-                      <p className="text-[10px] text-slate-400 uppercase font-bold">Dropoff</p>
+                      <p className="text-[10px] text-slate-400 uppercase font-bold">{t.tripsDropoff}</p>
                       <p className="text-sm font-medium text-slate-900">{selected.rideRequest?.dropoffAddress || "—"}</p>
                     </div>
                   </div>
@@ -298,15 +300,15 @@ export default function TripsPage() {
 
               <div className="grid grid-cols-3 gap-3 text-center">
                 <div className="bg-slate-50 rounded-xl p-3">
-                  <p className="text-xs text-slate-400">Fare</p>
-                  <p className="font-bold text-primary">฿{selected.lockedFare?.toFixed(0) || "—"}</p>
+                  <p className="text-xs text-slate-400">{t.tripsFare}</p>
+                  <p className="font-bold text-primary">{t.baht}{selected.lockedFare?.toFixed(0) || "—"}</p>
                 </div>
                 <div className="bg-slate-50 rounded-xl p-3">
-                  <p className="text-xs text-slate-400">Vehicle</p>
+                  <p className="text-xs text-slate-400">{t.dashboardVehicle}</p>
                   <p className="font-bold text-slate-900 text-xs">{selected.rideRequest?.vehicleType || "—"}</p>
                 </div>
                 <div className="bg-slate-50 rounded-xl p-3">
-                  <p className="text-xs text-slate-400">Time</p>
+                  <p className="text-xs text-slate-400">{t.tripsTime}</p>
                   <p className="font-bold text-slate-900 text-xs">
                     {new Date(selected.createdAt).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}
                   </p>
@@ -315,7 +317,7 @@ export default function TripsPage() {
 
               <div className="flex gap-3">
                 <div className="flex-1 bg-slate-50 rounded-xl p-3">
-                  <p className="text-[10px] text-slate-400 uppercase font-bold mb-1">Driver</p>
+                  <p className="text-[10px] text-slate-400 uppercase font-bold mb-1">{t.dashboardDriver}</p>
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary text-xs">
                       {(selected.driverProfile?.user?.name || "D")[0].toUpperCase()}
@@ -329,7 +331,7 @@ export default function TripsPage() {
                   </div>
                 </div>
                 <div className="flex-1 bg-slate-50 rounded-xl p-3">
-                  <p className="text-[10px] text-slate-400 uppercase font-bold mb-1">Passenger</p>
+                  <p className="text-[10px] text-slate-400 uppercase font-bold mb-1">{t.dashboardPassenger}</p>
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-500 text-xs">
                       {(selected.rideRequest?.customerProfile?.user?.name || "P")[0].toUpperCase()}

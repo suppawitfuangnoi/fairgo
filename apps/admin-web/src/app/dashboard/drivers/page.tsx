@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { apiFetch } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import { useLang } from "@/lib/lang-context";
 
 interface DriverProfile {
   id: string;
@@ -48,6 +49,7 @@ export default function DriversPage() {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<DriverProfile | null>(null);
   const [processing, setProcessing] = useState(false);
+  const { t } = useLang();
 
   const load = async () => {
     setLoading(true);
@@ -84,14 +86,14 @@ export default function DriversPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">Driver Management</h2>
-          <p className="text-slate-500 mt-1">Review, verify and manage all drivers on the platform.</p>
+          <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">{t.driversManagement}</h2>
+          <p className="text-slate-500 mt-1">{t.driversReviewApprove}</p>
         </div>
         <div className="flex gap-3">
           {pendingCount > 0 && (
             <span className="flex items-center gap-1.5 text-xs font-semibold text-amber-700 bg-amber-100 px-3 py-2 rounded-lg">
               <span className="material-symbols-outlined text-sm">warning</span>
-              {pendingCount} pending review
+              {pendingCount} {t.driversPendingReview}
             </span>
           )}
           <button
@@ -99,7 +101,7 @@ export default function DriversPage() {
             className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg font-bold text-sm shadow-sm hover:bg-slate-50 transition"
           >
             <span className="material-symbols-outlined text-xl">refresh</span>
-            Refresh
+            {t.refresh}
           </button>
         </div>
       </div>
@@ -113,7 +115,7 @@ export default function DriversPage() {
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Search by name, phone, or email..."
+              placeholder={t.driversSearch}
               className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-primary/30 outline-none"
             />
           </div>
@@ -142,7 +144,7 @@ export default function DriversPage() {
           <table className="w-full text-left">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
-                {["Driver", "Vehicle", "Rating", "Total Trips", "Wallet", "Online", "Status", "Actions"].map(h => (
+                {[t.driversName, t.dashboardVehicle, t.driversRating, t.driversTotalTrips, t.driversWallet, t.driversOnline, t.dashboardStatus, t.usersActions].map(h => (
                   <th key={h} className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
                     {h}
                   </th>
@@ -164,7 +166,7 @@ export default function DriversPage() {
                 <tr>
                   <td colSpan={8} className="px-6 py-12 text-center">
                     <span className="material-symbols-outlined text-4xl text-slate-300 block mb-2">person_search</span>
-                    <p className="text-sm text-slate-400">No drivers found</p>
+                    <p className="text-sm text-slate-400">{t.driversNoDrivers}</p>
                   </td>
                 </tr>
               ) : (
@@ -233,7 +235,7 @@ export default function DriversPage() {
                       <td className="px-6 py-4">
                         <div className={`flex items-center gap-1.5 text-xs font-semibold ${d.isOnline ? "text-emerald-600" : "text-slate-400"}`}>
                           <div className={`w-2 h-2 rounded-full ${d.isOnline ? "bg-emerald-500" : "bg-slate-300"}`} />
-                          {d.isOnline ? "Online" : "Offline"}
+                          {d.isOnline ? t.driversOnline : t.driversOffline}
                         </div>
                       </td>
 
@@ -249,7 +251,7 @@ export default function DriversPage() {
                             onClick={() => setSelected(d)}
                             className="px-4 py-1.5 bg-primary text-white rounded-lg text-xs font-bold shadow-sm hover:opacity-90 transition"
                           >
-                            Verify Driver
+                            {t.driversVerifyDriver}
                           </button>
                         ) : (
                           <div className="flex gap-1">
@@ -276,8 +278,8 @@ export default function DriversPage() {
         {/* Table footer */}
         {!loading && drivers.length > 0 && (
           <div className="px-6 py-3 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
-            <p className="text-xs text-slate-500">{drivers.length} drivers found</p>
-            <p className="text-xs text-slate-400">Joined: sorted by newest</p>
+            <p className="text-xs text-slate-500">{drivers.length} {t.driversNoDrivers.toLowerCase()}</p>
+            <p className="text-xs text-slate-400">{t.usersJoined}: sorted by newest</p>
           </div>
         )}
       </div>
@@ -287,7 +289,7 @@ export default function DriversPage() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setSelected(null)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
-              <h3 className="font-bold text-slate-900 text-lg">Driver Profile</h3>
+              <h3 className="font-bold text-slate-900 text-lg">{t.driversProfile}</h3>
               <button onClick={() => setSelected(null)} className="text-slate-400 hover:text-slate-600">
                 <span className="material-symbols-outlined">close</span>
               </button>
@@ -311,23 +313,23 @@ export default function DriversPage() {
             {/* Stats */}
             <div className="grid grid-cols-3 gap-3 mb-5 text-center">
               <div className="bg-slate-50 rounded-xl p-3">
-                <p className="text-xs text-slate-400 mb-1">Rating</p>
+                <p className="text-xs text-slate-400 mb-1">{t.driversRating}</p>
                 <p className="font-bold text-slate-900">{selected.averageRating?.toFixed(1) || "—"}</p>
               </div>
               <div className="bg-slate-50 rounded-xl p-3">
-                <p className="text-xs text-slate-400 mb-1">Trips</p>
+                <p className="text-xs text-slate-400 mb-1">{t.usersTrips}</p>
                 <p className="font-bold text-slate-900">{selected._count?.trips ?? selected.totalTrips ?? 0}</p>
               </div>
               <div className="bg-slate-50 rounded-xl p-3">
-                <p className="text-xs text-slate-400 mb-1">Wallet</p>
-                <p className="font-bold text-slate-900">฿{selected.wallet?.balance.toFixed(0) || "0"}</p>
+                <p className="text-xs text-slate-400 mb-1">{t.driversWallet}</p>
+                <p className="font-bold text-slate-900">{t.baht}{selected.wallet?.balance.toFixed(0) || "0"}</p>
               </div>
             </div>
 
             {/* Vehicle */}
             {selected.vehicles.length > 0 && (
               <div className="mb-4">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">Vehicle</p>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">{t.dashboardVehicle}</p>
                 {selected.vehicles.map((v, i) => (
                   <div key={i} className="bg-slate-50 rounded-xl p-3 flex items-center gap-3">
                     <span className="material-symbols-outlined text-primary">{VT_ICON[v.type] || "directions_car"}</span>
@@ -343,7 +345,7 @@ export default function DriversPage() {
             {/* Documents */}
             {selected.documents.length > 0 && (
               <div className="mb-5">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">Documents</p>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">{t.driversDocuments}</p>
                 <div className="space-y-2">
                   {selected.documents.map((doc, i) => (
                     <div key={i} className="flex items-center justify-between bg-slate-50 rounded-xl p-3">
@@ -376,14 +378,14 @@ export default function DriversPage() {
                   disabled={processing}
                   className="flex-1 bg-primary text-white rounded-xl py-3 font-bold text-sm hover:opacity-90 transition disabled:opacity-50"
                 >
-                  {processing ? "Processing..." : "✓ Approve Driver"}
+                  {processing ? "Processing..." : `✓ ${t.driversApprove}`}
                 </button>
                 <button
                   onClick={() => verifyDriver(selected.id, "REJECTED")}
                   disabled={processing}
                   className="flex-1 bg-red-50 text-red-500 border border-red-200 rounded-xl py-3 font-bold text-sm hover:bg-red-100 transition disabled:opacity-50"
                 >
-                  {processing ? "..." : "✕ Reject"}
+                  {processing ? "..." : `✕ ${t.driversReject}`}
                 </button>
               </div>
             )}

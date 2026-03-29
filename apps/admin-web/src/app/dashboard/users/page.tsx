@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { apiFetch } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import { useLang } from "@/lib/lang-context";
 
 interface User {
   id: string; name: string; phone: string; email?: string; role: string; status: string; createdAt: string;
@@ -69,6 +70,7 @@ export default function UsersPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("All Statuses");
   const [ratingFilter, setRatingFilter] = useState<RatingFilter>("Rating: Any");
   const [search, setSearch] = useState("");
+  const { t } = useLang();
 
   const load = async () => {
     setLoading(true);
@@ -108,8 +110,8 @@ export default function UsersPage() {
       <header className="p-8 pb-0 bg-fairgo-bg">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
-            <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">User &amp; Driver Management</h2>
-            <p className="text-slate-500 mt-1">Monitor, verify and manage platform participants in real-time.</p>
+            <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">{t.usersDriverManagement}</h2>
+            <p className="text-slate-500 mt-1">{t.usersMonitorManage}</p>
           </div>
           <div className="flex gap-3">
             <button
@@ -117,11 +119,11 @@ export default function UsersPage() {
               className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg font-bold text-sm shadow-sm hover:bg-slate-50 transition"
             >
               <span className="material-symbols-outlined text-xl">file_download</span>
-              Export Data
+              {t.usersExportData}
             </button>
             <button className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-bold text-sm shadow-md hover:opacity-90 transition">
               <span className="material-symbols-outlined text-xl">add</span>
-              Add New User
+              {t.usersAddNewUser}
             </button>
           </div>
         </div>
@@ -135,7 +137,7 @@ export default function UsersPage() {
                 type="text"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder="Search by name, email, or ID..."
+                placeholder={t.usersSearchByName}
                 className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-none rounded-lg focus:ring-2 focus:ring-primary/30 text-sm outline-none"
               />
             </div>
@@ -148,8 +150,8 @@ export default function UsersPage() {
                 onChange={e => setStatusFilter(e.target.value as StatusFilter)}
                 className="appearance-none pl-4 pr-10 py-2.5 bg-slate-50 border-none rounded-lg text-sm font-semibold focus:ring-2 focus:ring-primary/30 outline-none cursor-pointer"
               >
-                {["All Statuses", "Active", "Pending Verification", "Suspended"].map(s => (
-                  <option key={s}>{s}</option>
+                {[t.usersAllStatuses, t.usersActive, t.usersPendingVerification, t.usersSuspended].map((s, i) => (
+                  <option key={i}>{s}</option>
                 ))}
               </select>
               <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-lg">expand_more</span>
@@ -161,9 +163,9 @@ export default function UsersPage() {
                 onChange={e => setRoleTab(e.target.value as RoleTab)}
                 className="appearance-none pl-4 pr-10 py-2.5 bg-slate-50 border-none rounded-lg text-sm font-semibold focus:ring-2 focus:ring-primary/30 outline-none cursor-pointer"
               >
-                <option value="ALL">All Types</option>
-                <option value="DRIVER">Driver</option>
-                <option value="CUSTOMER">Passenger</option>
+                <option value="ALL">{t.usersAllTypes}</option>
+                <option value="DRIVER">{t.usersName}</option>
+                <option value="CUSTOMER">{t.usersPassenger}</option>
               </select>
               <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-lg">expand_more</span>
             </div>
@@ -192,8 +194,8 @@ export default function UsersPage() {
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
-                  {["Name", "Type", "Rating", "Total Trips", "Status", "Actions"].map(h => (
-                    <th key={h} className={`px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider ${h === "Rating" || h === "Total Trips" ? "text-center" : ""}`}>
+                  {[t.usersName, t.usersType, t.usersRating, t.usersTrips, t.usersStatus, t.usersActions].map(h => (
+                    <th key={h} className={`px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider ${h === t.usersRating || h === t.usersTrips ? "text-center" : ""}`}>
                       {h}
                     </th>
                   ))}
@@ -214,7 +216,7 @@ export default function UsersPage() {
                   <tr>
                     <td colSpan={6} className="px-6 py-12 text-center">
                       <span className="material-symbols-outlined text-4xl text-slate-300 block mb-2">group</span>
-                      <p className="text-sm text-slate-400">No users found</p>
+                      <p className="text-sm text-slate-400">{t.usersNoUsers}</p>
                     </td>
                   </tr>
                 ) : (
@@ -320,7 +322,7 @@ export default function UsersPage() {
           {!loading && filtered.length > 0 && (
             <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
               <p className="text-xs text-slate-500">
-                Showing <span className="font-semibold">{filtered.length}</span> of <span className="font-semibold">{users.length}</span> users
+                {t.usersShowing} <span className="font-semibold">{filtered.length}</span> {t.usersOf} <span className="font-semibold">{users.length}</span> users
               </p>
               <div className="flex items-center gap-1">
                 <button className="px-3 py-1.5 text-xs font-bold text-slate-500 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition">

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../config/theme.dart';
 import '../providers/auth_provider.dart';
+import '../providers/locale_provider.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -99,42 +100,42 @@ class _SplashScreenState extends State<SplashScreen>
                 ),
               ),
               const SizedBox(height: 6),
-              // DRIVER badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text(
-                  'DRIVER',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    letterSpacing: 4,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              // English tagline
-              Text(
-                'Drive Fair, Earn Fair',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white.withValues(alpha: 0.9),
-                  letterSpacing: 2,
-                ),
-              ),
-              const SizedBox(height: 4),
-              // Thai tagline
-              Text(
-                'ขับดี ได้ราคาที่แฟร์',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.white.withValues(alpha: 0.75),
-                ),
+              // DRIVER badge and tagline
+              Consumer<LocaleProvider>(
+                builder: (context, localeProvider, _) {
+                  final t = localeProvider.t;
+                  return Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          t.splashDriverBadge,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                            letterSpacing: 4,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      // Tagline
+                      Text(
+                        t.splashTagline,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white.withValues(alpha: 0.9),
+                          letterSpacing: 2,
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 60),
               // Loading indicator

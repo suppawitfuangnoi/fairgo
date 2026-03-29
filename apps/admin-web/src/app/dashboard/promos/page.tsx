@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useLang } from "@/lib/lang-context";
 
 const PROMOS = [
   { id: "P001", code: "FAIRGO20", desc: "ส่วนลด 20% สำหรับผู้ใช้ใหม่", type: "PERCENT", value: 20, maxDisc: 50, used: 128, limit: 500, active: true, expires: "2025-06-30" },
@@ -11,22 +12,23 @@ export default function PromosPage() {
   const [promos, setPromos] = useState(PROMOS);
   const [showNew, setShowNew] = useState(false);
   const [form, setForm] = useState({ code: "", desc: "", type: "PERCENT", value: 10, maxDisc: 50, limit: 100, expires: "" });
+  const { t } = useLang();
 
   const toggle = (id: string) => setPromos(prev => prev.map(p => p.id === id ? { ...p, active: !p.active } : p));
 
   return (
     <div className="p-6 space-y-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between">
-        <div><h1 className="text-xl font-bold text-fairgo-dark">Promotions & Coupons</h1><p className="text-sm text-gray-400">Manage discount codes and campaigns</p></div>
+        <div><h1 className="text-xl font-bold text-fairgo-dark">{t.promosCoupons}</h1><p className="text-sm text-gray-400">{t.promosManageDiscount}</p></div>
         <button onClick={() => setShowNew(true)} className="flex items-center gap-2 bg-primary text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-primary-600 transition shadow-sm">
-          <span className="material-icons-round text-base">add</span>New Promotion
+          <span className="material-icons-round text-base">add</span>{t.promosNewPromotion}
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
-        {[{ l: "Active Promos", v: promos.filter(p => p.active).length, icon: "local_offer", color: "text-primary bg-primary/10" },
-          { l: "Total Redemptions", v: promos.reduce((a, p) => a + p.used, 0), icon: "redeem", color: "text-emerald-500 bg-emerald-50" },
-          { l: "Expired", v: promos.filter(p => !p.active).length, icon: "timer_off", color: "text-gray-400 bg-gray-100" }].map(s => (
+        {[{ l: t.promosActivePromos, v: promos.filter(p => p.active).length, icon: "local_offer", color: "text-primary bg-primary/10" },
+          { l: t.promosTotalRedemptions, v: promos.reduce((a, p) => a + p.used, 0), icon: "redeem", color: "text-emerald-500 bg-emerald-50" },
+          { l: t.promosExpired, v: promos.filter(p => !p.active).length, icon: "timer_off", color: "text-gray-400 bg-gray-100" }].map(s => (
           <div key={s.l} className="bg-white rounded-2xl p-4 shadow-card flex items-center gap-3">
             <div className={`w-10 h-10 ${s.color} rounded-xl flex items-center justify-center`}>
               <span className="material-icons-round">{s.icon}</span>
@@ -37,13 +39,13 @@ export default function PromosPage() {
       </div>
 
       <div className="bg-white rounded-2xl shadow-card overflow-hidden">
-        <div className="p-4 border-b border-gray-100"><h2 className="font-semibold text-fairgo-dark">All Promotions</h2></div>
+        <div className="p-4 border-b border-gray-100"><h2 className="font-semibold text-fairgo-dark">{t.promosAllPromotions}</h2></div>
         <table className="w-full">
           <thead><tr className="bg-gray-50 text-xs font-semibold text-gray-400 uppercase">
-            <th className="text-left px-4 py-3">Code</th><th className="text-left px-4 py-3">Description</th>
-            <th className="text-center px-4 py-3">Discount</th><th className="text-center px-4 py-3">Usage</th>
-            <th className="text-left px-4 py-3">Expires</th><th className="text-center px-4 py-3">Status</th>
-            <th className="text-center px-4 py-3">Toggle</th>
+            <th className="text-left px-4 py-3">{t.promosCode}</th><th className="text-left px-4 py-3">{t.promosDescription}</th>
+            <th className="text-center px-4 py-3">{t.promosDiscount}</th><th className="text-center px-4 py-3">{t.promosUsage}</th>
+            <th className="text-left px-4 py-3">{t.promosExpires}</th><th className="text-center px-4 py-3">{t.dashboardStatus}</th>
+            <th className="text-center px-4 py-3">{t.promosToggle}</th>
           </tr></thead>
           <tbody className="divide-y divide-gray-50">
             {promos.map(p => (
@@ -60,7 +62,7 @@ export default function PromosPage() {
                 </td>
                 <td className="px-4 py-3 text-sm text-gray-400">{p.expires}</td>
                 <td className="px-4 py-3 text-center">
-                  {p.active ? <span className="badge-active">Active</span> : <span className="badge-completed">Expired</span>}
+                  {p.active ? <span className="badge-active">{t.promosActive}</span> : <span className="badge-completed">{t.promosExpired}</span>}
                 </td>
                 <td className="px-4 py-3 text-center">
                   <button onClick={() => toggle(p.id)} className={`relative w-10 h-5 rounded-full transition-colors ${p.active ? "bg-primary" : "bg-gray-200"}`}>
@@ -76,32 +78,32 @@ export default function PromosPage() {
       {showNew && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setShowNew(false)}>
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
-            <h3 className="font-bold text-fairgo-dark mb-4">New Promotion</h3>
+            <h3 className="font-bold text-fairgo-dark mb-4">{t.promosNewPromotion}</h3>
             <div className="space-y-3">
-              {[{ l: "Coupon Code", k: "code", t: "text", ph: "FAIRGO20" }, { l: "Description", k: "desc", t: "text", ph: "ลดราคา..." }].map(f => (
+              {[{ l: t.promosCouponCode, k: "code", type: "text", ph: "FAIRGO20" }, { l: t.promosDescription, k: "desc", type: "text", ph: "ลดราคา..." }].map(f => (
                 <div key={f.k}>
                   <label className="text-xs text-gray-500 font-medium">{f.l}</label>
-                  <input type={f.t} value={(form as any)[f.k]} onChange={e => setForm(prev => ({ ...prev, [f.k]: e.target.value }))} placeholder={f.ph}
+                  <input type={f.type} value={(form as any)[f.k]} onChange={e => setForm(prev => ({ ...prev, [f.k]: e.target.value }))} placeholder={f.ph}
                     className="w-full mt-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none" />
                 </div>
               ))}
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="text-xs text-gray-500 font-medium">Type</label>
+                <div><label className="text-xs text-gray-500 font-medium">{t.promosType}</label>
                   <select value={form.type} onChange={e => setForm(prev => ({ ...prev, type: e.target.value }))} className="w-full mt-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 outline-none">
-                    <option value="PERCENT">Percent (%)</option><option value="FIXED">Fixed (฿)</option>
+                    <option value="PERCENT">Percent (%)</option><option value="FIXED">Fixed ({t.baht})</option>
                   </select></div>
-                <div><label className="text-xs text-gray-500 font-medium">Value</label>
+                <div><label className="text-xs text-gray-500 font-medium">{t.promosValue}</label>
                   <input type="number" value={form.value} onChange={e => setForm(prev => ({ ...prev, value: +e.target.value }))}
                     className="w-full mt-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 outline-none" /></div>
               </div>
-              <div><label className="text-xs text-gray-500 font-medium">Expires</label>
+              <div><label className="text-xs text-gray-500 font-medium">{t.promosExpires}</label>
                 <input type="date" value={form.expires} onChange={e => setForm(prev => ({ ...prev, expires: e.target.value }))}
                   className="w-full mt-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 outline-none" /></div>
             </div>
             <div className="flex gap-2 mt-4">
-              <button onClick={() => setShowNew(false)} className="flex-1 border border-gray-200 text-gray-500 text-sm font-medium py-2.5 rounded-xl hover:bg-gray-50 transition">Cancel</button>
+              <button onClick={() => setShowNew(false)} className="flex-1 border border-gray-200 text-gray-500 text-sm font-medium py-2.5 rounded-xl hover:bg-gray-50 transition">{t.cancel}</button>
               <button onClick={() => { setPromos(prev => [...prev, { ...form, id: `P${Date.now()}`, used: 0, active: true, maxDisc: form.maxDisc }]); setShowNew(false); }}
-                className="flex-1 bg-primary text-white text-sm font-semibold py-2.5 rounded-xl hover:bg-primary-600 transition">Create</button>
+                className="flex-1 bg-primary text-white text-sm font-semibold py-2.5 rounded-xl hover:bg-primary-600 transition">{t.confirm}</button>
             </div>
           </div>
         </div>

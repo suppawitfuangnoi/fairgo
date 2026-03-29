@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { useAdminSocket } from "@/hooks/useSocket";
+import { useLang } from "@/lib/lang-context";
 
 const LiveMap = dynamic(() => import("@/components/LiveMap"), { ssr: false, loading: () => (
   <div className="h-56 flex items-center justify-center">
@@ -91,6 +92,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [chartPeriod, setChartPeriod] = useState("Daily");
   const { isConnected, drivers } = useAdminSocket();
+  const { t } = useLang();
 
   const load = async () => {
     try {
@@ -108,16 +110,16 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-slate-900">Overview Dashboard</h2>
-          <p className="text-sm text-slate-400 mt-0.5">Real-time platform metrics</p>
+          <h2 className="text-xl font-bold tracking-tight text-slate-900">{t.dashboardTitle}</h2>
+          <p className="text-sm text-slate-400 mt-0.5">{t.dashboardSubtitle}</p>
         </div>
         <div className="flex items-center gap-3">
           <div className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full ${isConnected ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-500"}`}>
             <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? "bg-emerald-500 animate-pulse" : "bg-slate-400"}`} />
-            {isConnected ? "Live" : "Polling"}
+            {isConnected ? t.live : t.polling}
           </div>
           <button onClick={load} className="flex items-center gap-1.5 text-xs text-slate-500 bg-white border border-slate-200 rounded-xl px-3 py-2 hover:bg-slate-50 transition shadow-sm">
-            <span className="material-symbols-outlined text-sm">refresh</span>Refresh
+            <span className="material-symbols-outlined text-sm">refresh</span>{t.refresh}
           </button>
         </div>
       </div>
@@ -126,28 +128,28 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <KpiCard
           icon="route"
-          label="Active Trips"
+          label={t.dashboardActiveTrips}
           value={loading ? "—" : fmt(stats?.activeTrips ?? 0)}
           change="+12.5%"
           changePositive
         />
         <KpiCard
           icon="payments"
-          label="Total Revenue"
-          value={loading ? "—" : `฿${(stats?.totalRevenue ?? 0).toLocaleString()}`}
+          label={t.dashboardTodayRevenue}
+          value={loading ? "—" : `${t.baht}${(stats?.totalRevenue ?? 0).toLocaleString()}`}
           change="+8.2%"
           changePositive
         />
         <KpiCard
           icon="person_add"
-          label="New Users"
+          label={t.usersTotal}
           value={loading ? "—" : fmt(stats?.totalUsers ?? 0)}
           change="-3.1%"
           changePositive={false}
         />
         <KpiCard
           icon="airline_stops"
-          label="Active Drivers"
+          label={t.dashboardOnlineDrivers}
           value={loading ? "—" : (isConnected ? drivers.length : (stats?.onlineDrivers ?? stats?.activeDrivers ?? 0)).toLocaleString()}
           change="+5.4%"
           changePositive
@@ -229,12 +231,12 @@ export default function DashboardPage() {
         {/* Recent Activity Table */}
         <div className="lg:col-span-2 bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
           <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-            <h4 className="text-base font-bold text-slate-900">Recent Activity</h4>
+            <h4 className="text-base font-bold text-slate-900">{t.dashboardRecentActivity}</h4>
             <a href="/dashboard/trips" className="text-sm font-bold text-primary hover:underline">View All Trips</a>
           </div>
           <div className="overflow-y-auto flex-1 divide-y divide-slate-50">
             {!loading && trips.length === 0 && (
-              <div className="py-8 text-center text-sm text-slate-400">No recent trips</div>
+              <div className="py-8 text-center text-sm text-slate-400">{t.dashboardNoActivity}</div>
             )}
             {trips.slice(0, 8).map(t => (
               <div key={t.id} className="px-5 py-3 hover:bg-slate-50/60 transition">
@@ -253,7 +255,7 @@ export default function DashboardPage() {
                         → {t.rideRequest?.dropoffAddress?.substring(0, 22) || "N/A"}
                       </p>
                       <p className="text-[10px] text-slate-400 truncate">
-                        {t.driverProfile?.user?.name || "Unassigned"}
+                        {t.driverProfile?.user?.name || t.tripsUnassigned}
                       </p>
                     </div>
                   </div>
@@ -271,21 +273,21 @@ export default function DashboardPage() {
       {/* Full Recent Activity Table */}
       <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
         <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
-          <h4 className="text-lg font-bold text-slate-900">Trip Activity Log</h4>
+          <h4 className="text-lg font-bold text-slate-900">{t.dashboardRecentActivity}</h4>
           <a href="/dashboard/trips" className="text-sm font-bold text-primary hover:underline">View All</a>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead className="bg-slate-50">
               <tr>
-                {["User", "Driver", "Route", "Fare", "Status", "Time"].map(h => (
+                {[t.usersName, t.dashboardDriver, t.tripsRoute, t.tripsFare, t.dashboardStatus, t.tripsTime].map(h => (
                   <th key={h} className="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {!loading && trips.length === 0 && (
-                <tr><td colSpan={6} className="px-6 py-8 text-center text-sm text-slate-400">No trips found</td></tr>
+                <tr><td colSpan={6} className="px-6 py-8 text-center text-sm text-slate-400">{t.tripsNoTrips}</td></tr>
               )}
               {trips.slice(0, 8).map(t => (
                 <tr key={t.id} className="hover:bg-slate-50/60 transition-colors">
@@ -302,7 +304,7 @@ export default function DashboardPage() {
                       <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-xs">
                         {(t.driverProfile?.user?.name || "?")[0].toUpperCase()}
                       </div>
-                      <span className="text-sm font-semibold text-slate-900">{t.driverProfile?.user?.name || "Unassigned"}</span>
+                      <span className="text-sm font-semibold text-slate-900">{t.driverProfile?.user?.name || t.tripsUnassigned}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4">

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'config/theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/job_provider.dart';
+import 'providers/locale_provider.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/otp_screen.dart';
@@ -20,20 +21,30 @@ class FairGoDriverApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => LocaleProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => JobProvider()),
       ],
-      child: MaterialApp(
-        title: 'FAIRGO Driver',
-        debugShowCheckedModeBanner: false,
-        theme: FairGoTheme.lightTheme,
-        initialRoute: '/',
-        routes: {
-          '/': (context) => const SplashScreen(),
-          '/login': (context) => const LoginScreen(),
-          '/otp': (context) => const OtpScreen(),
-          '/home': (context) => const HomeScreen(),
-          '/submit-offer': (context) => const SubmitOfferScreen(),
+      child: Consumer<LocaleProvider>(
+        builder: (context, localeProvider, _) {
+          return MaterialApp(
+            title: 'FAIRGO Driver',
+            debugShowCheckedModeBanner: false,
+            theme: FairGoTheme.lightTheme,
+            locale: localeProvider.locale,
+            supportedLocales: const [
+              Locale('th'),
+              Locale('en'),
+            ],
+            initialRoute: '/',
+            routes: {
+              '/': (context) => const SplashScreen(),
+              '/login': (context) => const LoginScreen(),
+              '/otp': (context) => const OtpScreen(),
+              '/home': (context) => const HomeScreen(),
+              '/submit-offer': (context) => const SubmitOfferScreen(),
+            },
+          );
         },
       ),
     );

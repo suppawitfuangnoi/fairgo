@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../config/theme.dart';
 import '../providers/auth_provider.dart';
+import '../providers/locale_provider.dart';
 
 class OtpScreen extends StatefulWidget {
   const OtpScreen({super.key});
@@ -32,6 +33,8 @@ class _OtpScreenState extends State<OtpScreen> {
   @override
   Widget build(BuildContext context) {
     final phone = ModalRoute.of(context)!.settings.arguments as String;
+    final t = context.watch<LocaleProvider>().t;
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -47,9 +50,9 @@ class _OtpScreenState extends State<OtpScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Verify Your Number', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              Text(t.otpTitle, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              Text('We sent a 6-digit OTP code to\n$phone', style: const TextStyle(fontSize: 14, color: FairGoTheme.textSecondary, height: 1.5)),
+              Text(t.otpSubtitle(phone), style: const TextStyle(fontSize: 14, color: FairGoTheme.textSecondary, height: 1.5)),
               const SizedBox(height: 32),
               TextField(
                 controller: _otpController,
@@ -100,9 +103,26 @@ class _OtpScreenState extends State<OtpScreen> {
                     onPressed: auth.isLoading ? null : () => _verifyOtp(phone),
                     child: auth.isLoading
                         ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : const Text('Verify'),
+                        : Text(t.otpVerify),
                   );
                 },
+              ),
+              const SizedBox(height: 16),
+              Center(
+                child: TextButton(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(t.otpResend)),
+                    );
+                  },
+                  child: Text(
+                    t.otpResend,
+                    style: const TextStyle(
+                      color: FairGoTheme.primaryCyan,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(height: 16),
               Center(

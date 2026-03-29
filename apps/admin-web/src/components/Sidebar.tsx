@@ -4,24 +4,26 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { clearAuth, getUser } from "@/lib/auth";
-
-const navItems = [
-  { href: "/dashboard",           label: "Dashboard",       icon: "dashboard" },
-  { href: "/dashboard/trips",     label: "Trip Monitor",    icon: "map" },
-  { href: "/dashboard/users",     label: "Users",           icon: "people" },
-  { href: "/dashboard/drivers",   label: "Driver Verify",   icon: "verified_user" },
-  { href: "/dashboard/pricing",   label: "Pricing Policy",  icon: "sell" },
-  { href: "/dashboard/disputes",  label: "Disputes",        icon: "gavel" },
-  { href: "/dashboard/promos",    label: "Promotions",      icon: "local_offer" },
-  { href: "/dashboard/analytics", label: "Reports",         icon: "bar_chart" },
-  { href: "/dashboard/settings",  label: "Settings",        icon: "settings" },
-];
+import { useLang } from "@/lib/lang-context";
 
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const user = getUser();
   const [collapsed, setCollapsed] = useState(false);
+  const { t } = useLang();
+
+  const navItems = [
+    { href: "/dashboard",           label: t.navDashboard,  icon: "dashboard" },
+    { href: "/dashboard/trips",     label: t.navTrips,      icon: "map" },
+    { href: "/dashboard/users",     label: t.navUsers,      icon: "people" },
+    { href: "/dashboard/drivers",   label: t.navDrivers,    icon: "verified_user" },
+    { href: "/dashboard/pricing",   label: t.navPricing,    icon: "sell" },
+    { href: "/dashboard/disputes",  label: t.navDisputes,   icon: "gavel" },
+    { href: "/dashboard/promos",    label: t.navPromos,     icon: "local_offer" },
+    { href: "/dashboard/analytics", label: t.navAnalytics,  icon: "bar_chart" },
+    { href: "/dashboard/settings",  label: t.navSettings,   icon: "settings" },
+  ];
 
   const handleLogout = () => {
     clearAuth();
@@ -41,7 +43,7 @@ export default function Sidebar() {
           {!collapsed && (
             <div>
               <h1 className="font-extrabold text-fairgo-dark text-base tracking-tight leading-none">FAIRGO</h1>
-              <p className="text-[10px] text-primary font-semibold mt-0.5 tracking-widest uppercase">Admin Portal</p>
+              <p className="text-[10px] text-primary font-semibold mt-0.5 tracking-widest uppercase">{t.navAdminPortal}</p>
             </div>
           )}
         </div>
@@ -100,14 +102,14 @@ export default function Sidebar() {
               <p className="text-xs font-semibold text-fairgo-dark truncate">
                 {(user?.name as string) || "Admin"}
               </p>
-              <p className="text-[10px] text-gray-400">System Manager</p>
+              <p className="text-[10px] text-gray-400">{t.navSystemManager}</p>
             </div>
           )}
           {!collapsed && (
             <button
               onClick={handleLogout}
               className="text-gray-300 hover:text-red-400 transition"
-              title="Logout"
+              title={t.logout}
             >
               <span className="material-icons-round text-[18px]">logout</span>
             </button>

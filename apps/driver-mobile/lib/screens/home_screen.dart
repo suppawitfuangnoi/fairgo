@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../config/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/job_provider.dart';
+import '../providers/locale_provider.dart';
 import '../services/location_service.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -29,40 +30,45 @@ class _HomeScreenState extends State<HomeScreen> {
           _ProfileTab(),
         ],
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 12,
-              offset: const Offset(0, -2),
+      bottomNavigationBar: Consumer<LocaleProvider>(
+        builder: (context, localeProvider, _) {
+          final t = localeProvider.t;
+          return Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 12,
+                  offset: const Offset(0, -2),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (index) => setState(() => _currentIndex = index),
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
-          selectedItemColor: FairGoTheme.primaryCyan,
-          unselectedItemColor: const Color(0xFFB0B0B0),
-          selectedLabelStyle:
-              const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
-          unselectedLabelStyle: const TextStyle(fontSize: 11),
-          elevation: 0,
-          items: const [
-            BottomNavigationBarItem(
-                icon: Icon(Icons.list_alt_rounded), label: 'Jobs'),
-            BottomNavigationBarItem(
-                icon: Icon(Icons.local_offer_rounded), label: 'Offers'),
-            BottomNavigationBarItem(
-                icon: Icon(Icons.account_balance_wallet_rounded),
-                label: 'Earnings'),
-            BottomNavigationBarItem(
-                icon: Icon(Icons.person_rounded), label: 'Profile'),
-          ],
-        ),
+            child: BottomNavigationBar(
+              currentIndex: _currentIndex,
+              onTap: (index) => setState(() => _currentIndex = index),
+              type: BottomNavigationBarType.fixed,
+              backgroundColor: Colors.white,
+              selectedItemColor: FairGoTheme.primaryCyan,
+              unselectedItemColor: const Color(0xFFB0B0B0),
+              selectedLabelStyle:
+                  const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+              unselectedLabelStyle: const TextStyle(fontSize: 11),
+              elevation: 0,
+              items: [
+                BottomNavigationBarItem(
+                    icon: const Icon(Icons.list_alt_rounded), label: t.navJobs),
+                BottomNavigationBarItem(
+                    icon: const Icon(Icons.local_offer_rounded), label: t.navOffers),
+                BottomNavigationBarItem(
+                    icon: const Icon(Icons.account_balance_wallet_rounded),
+                    label: t.navEarnings),
+                BottomNavigationBarItem(
+                    icon: const Icon(Icons.person_rounded), label: t.navProfile),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -80,14 +86,16 @@ class _JobListTabState extends State<_JobListTab>
     with SingleTickerProviderStateMixin {
   GoogleMapController? _mapController;
   LatLng _driverLocation = const LatLng(13.7563, 100.5018);
-  String _filter = 'All Jobs';
+  late String _filter;
   late AnimationController _pulseController;
-
-  final List<String> _filters = ['All Jobs', 'High Fare', 'Short Trips'];
+  late List<String> _filters;
 
   @override
   void initState() {
     super.initState();
+    final t = Provider.of<LocaleProvider>(context, listen: false).t;
+    _filter = t.jobFilterAll;
+    _filters = [t.jobFilterAll, t.jobFilterHighFare, t.jobFilterShortTrips];
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
@@ -142,13 +150,14 @@ class _JobListTabState extends State<_JobListTab>
     return markers;
   }
 
-  List<dynamic> _applyFilter(List<dynamic> rides) {
-    if (_filter == 'High Fare') {
+  List<dynamic> _applyFilter(List<dynamic> rides, LocaleProvider localeProvider) {
+    final t = localeProvider.t;
+    if (_filter == t.jobFilterHighFare) {
       final sorted = List.from(rides);
       sorted.sort((a, b) => ((b['fareOffer'] as num?) ?? 0)
           .compareTo((a['fareOffer'] as num?) ?? 0));
       return sorted;
-    } else if (_filter == 'Short Trips') {
+    } else if (_filter == t.jobFilterShortTrips) {
       final sorted = List.from(rides);
       sorted.sort((a, b) =>
           ((a['estimatedDistance'] as num?) ?? 99)
@@ -160,8 +169,9 @@ class _JobListTabState extends State<_JobListTab>
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AuthProvider>(
-      builder: (context, auth, _) {
+    return Consumer2<AuthProvider, LocaleProvider>(
+      builder: (context, auth, localeProvider, _) {
+        final t = localeProvider.t;
         final name = auth.user?['name'] ?? 'Driver';
         final dp = auth.user?['driverProfile'];
         final isOnline = dp?['isOnline'] ?? false;
@@ -179,9 +189,9 @@ class _JobListTabState extends State<_JobListTab>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Job Requests',
-                            style: TextStyle(
+                          Text(
+                            t.jobRequestsTitle,
+                            style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                               color: FairGoTheme.textPrimary,
@@ -207,7 +217,7 @@ class _JobListTabState extends State<_JobListTab>
                                 ),
                               ),
                               Text(
-                                isOnline ? 'Online · Finding rides' : 'Offline',
+                                isOnline ? t.jobOnline : t.jobOffline,
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,
@@ -344,7 +354,7 @@ class _JobListTabState extends State<_JobListTab>
                   children: [
                     Consumer<JobProvider>(
                       builder: (context, jobs, _) => Text(
-                        '${_applyFilter(jobs.nearbyRides).length} nearby requests',
+                        '${_applyFilter(jobs.nearbyRides, localeProvider).length} nearby requests',
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -381,7 +391,7 @@ class _JobListTabState extends State<_JobListTab>
                           child: CircularProgressIndicator(
                               color: FairGoTheme.primaryCyan));
                     }
-                    final rides = _applyFilter(jobs.nearbyRides);
+                    final rides = _applyFilter(jobs.nearbyRides, localeProvider);
                     if (rides.isEmpty) {
                       return Center(
                         child: Column(
@@ -390,18 +400,18 @@ class _JobListTabState extends State<_JobListTab>
                             Icon(Icons.search_off_rounded,
                                 size: 64, color: Colors.grey[300]),
                             const SizedBox(height: 16),
-                            const Text(
-                              'No nearby rides',
-                              style: TextStyle(
+                            Text(
+                              t.jobNoRides,
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                                 color: FairGoTheme.textSecondary,
                               ),
                             ),
                             const SizedBox(height: 4),
-                            const Text(
-                              'New requests will appear here',
-                              style: TextStyle(
+                            Text(
+                              t.jobNoRidesDesc,
+                              style: const TextStyle(
                                   fontSize: 13, color: Color(0xFFBDBDBD)),
                             ),
                           ],
@@ -522,7 +532,7 @@ class _JobCard extends StatelessWidget {
                                       color: Color(0xFFF59E0B)),
                                   const SizedBox(width: 2),
                                   Text(
-                                    '${customerRating is double ? customerRating.toStringAsFixed(1) : customerRating} · $distance km',
+                                    '${customerRating is double ? customerRating.toStringAsFixed(1) : customerRating} · ${context.watch<LocaleProvider>().t.jobDistance(distance)}',
                                     style: const TextStyle(
                                       fontSize: 11,
                                       color: FairGoTheme.textSecondary,
@@ -556,7 +566,7 @@ class _JobCard extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 3),
                                 Text(
-                                  '~$duration min',
+                                  context.watch<LocaleProvider>().t.jobDuration(duration),
                                   style: const TextStyle(
                                     fontSize: 10,
                                     color: FairGoTheme.textSecondary,
@@ -637,7 +647,7 @@ class _JobCard extends StatelessWidget {
                     Row(
                       children: [
                         Text(
-                          'Range: ฿${ride['fareMin']?.toStringAsFixed(0) ?? '0'} - ฿${ride['fareMax']?.toStringAsFixed(0) ?? '0'}',
+                          '${context.watch<LocaleProvider>().t.submitFareRange}: ฿${ride['fareMin']?.toStringAsFixed(0) ?? '0'} - ฿${ride['fareMax']?.toStringAsFixed(0) ?? '0'}',
                           style: const TextStyle(
                               fontSize: 10,
                               color: FairGoTheme.textSecondary),
@@ -657,8 +667,8 @@ class _JobCard extends StatelessWidget {
                             tapTargetSize:
                                 MaterialTapTargetSize.shrinkWrap,
                           ),
-                          child: const Text('Reject',
-                              style: TextStyle(fontSize: 12)),
+                          child: Text('Reject',
+                              style: const TextStyle(fontSize: 12)),
                         ),
                         const SizedBox(width: 8),
                         ElevatedButton(
@@ -677,8 +687,8 @@ class _JobCard extends StatelessWidget {
                                 MaterialTapTargetSize.shrinkWrap,
                             elevation: 0,
                           ),
-                          child: const Text('Accept Job',
-                              style: TextStyle(
+                          child: Text(t.jobSubmitOffer,
+                              style: const TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600)),
                         ),
@@ -734,15 +744,17 @@ class _MyOffersTabState extends State<_MyOffersTab> {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.watch<LocaleProvider>().t;
+
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('My Offers',
+            Text(t.offersTitle,
                 style:
-                    TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                    const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             Expanded(
               child: Consumer<JobProvider>(
@@ -755,11 +767,15 @@ class _MyOffersTabState extends State<_MyOffersTab> {
                           Icon(Icons.local_offer_rounded,
                               size: 64, color: Colors.grey[300]),
                           const SizedBox(height: 16),
-                          const Text('No offers yet',
-                              style: TextStyle(
+                          Text(t.offersEmpty,
+                              style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
                                   color: FairGoTheme.textSecondary)),
+                          const SizedBox(height: 4),
+                          Text(t.offersEmptyDesc,
+                              style: const TextStyle(
+                                  fontSize: 13, color: Color(0xFFBDBDBD))),
                         ],
                       ),
                     );
@@ -772,6 +788,11 @@ class _MyOffersTabState extends State<_MyOffersTab> {
                         'PENDING': FairGoTheme.warning,
                         'ACCEPTED': FairGoTheme.success,
                         'REJECTED': FairGoTheme.danger,
+                      };
+                      final statusMap = {
+                        'PENDING': t.offerStatusPending,
+                        'ACCEPTED': t.offerStatusAccepted,
+                        'REJECTED': t.offerStatusRejected,
                       };
                       return Container(
                         margin: const EdgeInsets.only(bottom: 10),
@@ -832,7 +853,7 @@ class _MyOffersTabState extends State<_MyOffersTab> {
                                         BorderRadius.circular(6),
                                   ),
                                   child: Text(
-                                    offer['status'] ?? '',
+                                    statusMap[offer['status']] ?? offer['status'] ?? '',
                                     style: TextStyle(
                                         fontSize: 10,
                                         fontWeight: FontWeight.w600,
@@ -881,6 +902,8 @@ class _EarningsTabState extends State<_EarningsTab> {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.watch<LocaleProvider>().t;
+
     return SafeArea(
       child: SingleChildScrollView(
         child: Consumer<AuthProvider>(
@@ -1008,9 +1031,9 @@ class _EarningsTabState extends State<_EarningsTab> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            'Earnings',
-                            style: TextStyle(
+                          Text(
+                            t.earningsTitle,
+                            style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: FairGoTheme.textPrimary,
@@ -1023,11 +1046,11 @@ class _EarningsTabState extends State<_EarningsTab> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Row(
-                              children: ['Weekly', 'Daily'].map((t) {
-                                final sel = (t == 'Weekly') == _isWeekly;
+                              children: ['Weekly', 'Daily'].map((label) {
+                                final sel = (label == 'Weekly') == _isWeekly;
                                 return GestureDetector(
                                   onTap: () => setState(
-                                      () => _isWeekly = t == 'Weekly'),
+                                      () => _isWeekly = label == 'Weekly'),
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 14, vertical: 6),
@@ -1039,7 +1062,7 @@ class _EarningsTabState extends State<_EarningsTab> {
                                           BorderRadius.circular(6),
                                     ),
                                     child: Text(
-                                      t,
+                                      label,
                                       style: TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w600,
@@ -1074,9 +1097,9 @@ class _EarningsTabState extends State<_EarningsTab> {
                                 Expanded(
                                   child: Column(
                                     children: [
-                                      const Text(
-                                        'Total Trips',
-                                        style: TextStyle(
+                                      Text(
+                                        t.earningsTripsLabel,
+                                        style: const TextStyle(
                                           fontSize: 11,
                                           color: FairGoTheme.textSecondary,
                                         ),
@@ -1099,9 +1122,9 @@ class _EarningsTabState extends State<_EarningsTab> {
                                 Expanded(
                                   child: Column(
                                     children: [
-                                      const Text(
-                                        'Rating',
-                                        style: TextStyle(
+                                      Text(
+                                        t.earningsAvgLabel,
+                                        style: const TextStyle(
                                           fontSize: 11,
                                           color: FairGoTheme.textSecondary,
                                         ),
@@ -1207,6 +1230,8 @@ class _ProfileTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.watch<LocaleProvider>().t;
+
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -1268,32 +1293,24 @@ class _ProfileTab extends StatelessWidget {
                 const SizedBox(height: 32),
                 _MenuItem(
                     icon: Icons.person_outline,
-                    label: 'Edit Profile',
-                    onTap: () {}),
-                _MenuItem(
-                    icon: Icons.directions_car_outlined,
-                    label: 'My Vehicles',
+                    label: t.profileVehicleInfo,
                     onTap: () {}),
                 _MenuItem(
                     icon: Icons.description_outlined,
-                    label: 'Documents',
-                    onTap: () {}),
-                _MenuItem(
-                    icon: Icons.account_balance_wallet_outlined,
-                    label: 'Wallet',
+                    label: t.profileDocuments,
                     onTap: () {}),
                 _MenuItem(
                     icon: Icons.headset_mic_outlined,
-                    label: 'Support',
+                    label: t.profileSupport,
                     onTap: () {}),
                 _MenuItem(
                     icon: Icons.settings_outlined,
-                    label: 'Settings',
+                    label: t.profileSettings,
                     onTap: () {}),
                 const SizedBox(height: 8),
                 _MenuItem(
                   icon: Icons.logout_rounded,
-                  label: 'Sign Out',
+                  label: t.profileSignOut,
                   color: FairGoTheme.danger,
                   onTap: () {
                     auth.logout();

@@ -4,6 +4,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import '../config/theme.dart';
 import '../providers/ride_provider.dart';
+import '../providers/locale_provider.dart';
 
 class MatchingScreen extends StatefulWidget {
   const MatchingScreen({super.key});
@@ -39,7 +40,7 @@ class _MatchingScreenState extends State<MatchingScreen>
     super.dispose();
   }
 
-  Set<Marker> _buildMarkers(Map<String, dynamic>? activeRide) {
+  Set<Marker> _buildMarkers(Map<String, dynamic>? activeRide, AppTranslations t) {
     if (activeRide == null) return {};
     final markers = <Marker>{};
     final pickupLat = (activeRide['pickupLatitude'] as num?)?.toDouble();
@@ -51,7 +52,7 @@ class _MatchingScreenState extends State<MatchingScreen>
         markerId: const MarkerId('pickup'),
         position: LatLng(pickupLat, pickupLng),
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueCyan),
-        infoWindow: InfoWindow(title: 'จุดรับ', snippet: activeRide['pickupAddress'] ?? ''),
+        infoWindow: InfoWindow(title: t.ridePickupMarker, snippet: activeRide['pickupAddress'] ?? ''),
       ));
     }
     if (dropoffLat != null && dropoffLng != null) {
@@ -59,7 +60,7 @@ class _MatchingScreenState extends State<MatchingScreen>
         markerId: const MarkerId('dropoff'),
         position: LatLng(dropoffLat, dropoffLng),
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-        infoWindow: InfoWindow(title: 'จุดส่ง', snippet: activeRide['dropoffAddress'] ?? ''),
+        infoWindow: InfoWindow(title: t.rideDropoffMarker, snippet: activeRide['dropoffAddress'] ?? ''),
       ));
     }
     return markers;
@@ -104,6 +105,8 @@ class _MatchingScreenState extends State<MatchingScreen>
 
   @override
   Widget build(BuildContext context) {
+    final t = context.watch<LocaleProvider>().t;
+
     return Scaffold(
       body: Consumer<RideProvider>(
         builder: (context, ride, _) {
@@ -123,7 +126,7 @@ class _MatchingScreenState extends State<MatchingScreen>
                   ),
                   zoom: 13,
                 ),
-                markers: _buildMarkers(activeRide),
+                markers: _buildMarkers(activeRide, t),
                 onMapCreated: (c) {
                   _mapController = c;
                   _fitMapBounds(activeRide);
@@ -177,8 +180,8 @@ class _MatchingScreenState extends State<MatchingScreen>
                                 Expanded(
                                   child: Text(
                                     offers.isEmpty
-                                        ? 'กำลังค้นหาคนขับ...'
-                                        : 'พบคนขับ ${offers.length} คน',
+                                        ? t.matchingSearchingForDrivers
+                                        : t.matchingDriversFound(offers.length),
                                     style: const TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
@@ -273,8 +276,8 @@ class _MatchingScreenState extends State<MatchingScreen>
                                     Expanded(
                                       child: Text(
                                         offers.isEmpty
-                                            ? 'กำลังค้นหา...'
-                                            : 'พบคนขับ ${offers.length} คน',
+                                            ? t.matchingSearching
+                                            : t.matchingDriversFound(offers.length),
                                         style: const TextStyle(
                                           fontSize: 18,
                                           fontWeight: FontWeight.bold,
@@ -291,9 +294,9 @@ class _MatchingScreenState extends State<MatchingScreen>
                                         borderRadius:
                                             BorderRadius.circular(10),
                                       ),
-                                      child: const Text(
-                                        'Fair Price',
-                                        style: TextStyle(
+                                      child: Text(
+                                        t.matchingBestMatch,
+                                        style: const TextStyle(
                                           fontSize: 11,
                                           fontWeight: FontWeight.w700,
                                           color: FairGoTheme.primaryCyan,
@@ -304,9 +307,9 @@ class _MatchingScreenState extends State<MatchingScreen>
                                 ),
                                 if (offers.isNotEmpty) ...[
                                   const SizedBox(height: 2),
-                                  const Text(
-                                    'คนขับเลือกคุณ เพราะราคานี้แฟร์',
-                                    style: TextStyle(
+                                  Text(
+                                    t.matchingYourOffer(activeRide?['fareOffer'] ?? 0),
+                                    style: const TextStyle(
                                       fontSize: 12,
                                       color: FairGoTheme.textSecondary,
                                     ),
@@ -334,7 +337,7 @@ class _MatchingScreenState extends State<MatchingScreen>
                                         const SizedBox(width: 8),
                                         Expanded(
                                           child: Text(
-                                            'ราคาที่เสนอ: ฿${activeRide['fareOffer']}',
+                                            t.matchingYourOffer(activeRide['fareOffer'] ?? 0),
                                             style: const TextStyle(
                                               fontSize: 13,
                                               fontWeight: FontWeight.w600,
@@ -399,19 +402,19 @@ class _MatchingScreenState extends State<MatchingScreen>
                                           },
                                         ),
                                         const SizedBox(height: 16),
-                                        const Text(
-                                          'กำลังค้นหาคนขับ...',
-                                          style: TextStyle(
+                                        Text(
+                                          t.matchingSearchingForDrivers,
+                                          style: const TextStyle(
                                             fontSize: 15,
                                             fontWeight: FontWeight.w600,
                                             color: FairGoTheme.textPrimary,
                                           ),
                                         ),
                                         const SizedBox(height: 4),
-                                        const Text(
-                                          'คนขับบริเวณใกล้เคียงจะเห็นคำขอของคุณ',
+                                        Text(
+                                          t.matchingNearbyWillSee,
                                           textAlign: TextAlign.center,
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                               fontSize: 12,
                                               color: FairGoTheme.textSecondary),
                                         ),
@@ -429,6 +432,7 @@ class _MatchingScreenState extends State<MatchingScreen>
                                     return _DriverOfferCard(
                                       offer: offer,
                                       isBestMatch: isBest,
+                                      t: t,
                                       onAccept: () =>
                                           _acceptOffer(offer['id']),
                                       onDecline: () =>
@@ -457,12 +461,14 @@ class _MatchingScreenState extends State<MatchingScreen>
 class _DriverOfferCard extends StatelessWidget {
   final Map<String, dynamic> offer;
   final bool isBestMatch;
+  final AppTranslations t;
   final VoidCallback onAccept;
   final VoidCallback onDecline;
 
   const _DriverOfferCard({
     required this.offer,
     required this.isBestMatch,
+    required this.t,
     required this.onAccept,
     required this.onDecline,
   });
@@ -534,7 +540,7 @@ class _DriverOfferCard extends StatelessWidget {
                                     size: 13, color: Color(0xFFF59E0B)),
                                 const SizedBox(width: 2),
                                 Text(
-                                  '${driver?['averageRating']?.toStringAsFixed(1) ?? '0.0'} · ${driver?['totalTrips'] ?? 0} เที่ยว',
+                                  '${driver?['averageRating']?.toStringAsFixed(1) ?? '0.0'} · ${t.matchingTripsCount(driver?['totalTrips'] ?? 0)}',
                                   style: const TextStyle(
                                       fontSize: 11,
                                       color: FairGoTheme.textSecondary),
@@ -567,7 +573,7 @@ class _DriverOfferCard extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            'อีก ${offer['estimatedPickupMinutes']} นาที',
+                            t.matchingMinAway(offer['estimatedPickupMinutes'] ?? 0),
                             style: const TextStyle(
                                 fontSize: 11,
                                 color: FairGoTheme.textSecondary),
@@ -609,8 +615,8 @@ class _DriverOfferCard extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(10)),
                             padding: const EdgeInsets.symmetric(vertical: 10),
                           ),
-                          child: const Text('ปฏิเสธ',
-                              style: TextStyle(fontSize: 13)),
+                          child: Text(t.matchingDecline,
+                              style: const TextStyle(fontSize: 13)),
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -625,8 +631,8 @@ class _DriverOfferCard extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(vertical: 10),
                             elevation: 0,
                           ),
-                          child: const Text('รับ',
-                              style: TextStyle(
+                          child: Text(t.matchingAccept,
+                              style: const TextStyle(
                                   fontSize: 13, fontWeight: FontWeight.w600)),
                         ),
                       ),
@@ -650,9 +656,9 @@ class _DriverOfferCard extends StatelessWidget {
                       bottomLeft: Radius.circular(10),
                     ),
                   ),
-                  child: const Text(
-                    'BEST MATCH',
-                    style: TextStyle(
+                  child: Text(
+                    t.matchingBestMatch,
+                    style: const TextStyle(
                       fontSize: 9,
                       fontWeight: FontWeight.w800,
                       color: Colors.white,

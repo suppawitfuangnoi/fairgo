@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../config/theme.dart';
+import '../providers/locale_provider.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -15,38 +17,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   late AnimationController _floatController;
   late Animation<double> _floatAnimation;
 
-  final List<_OnboardingData> _pages = [
-    _OnboardingData(
-      title: 'ตั้งราคาที่คุณ',
-      titleHighlight: 'แฟร์',
-      description:
-          'เลือกราคาที่คุณพอใจ เสนอราคาได้เอง คนขับพร้อมรับข้อเสนอของคุณ เดินทางสบายใจในราคาที่คุณกำหนด',
-      badgeLabel: 'ราคาที่ตกลงกัน',
-      badgeValue: '฿120.00',
-      badgeIcon: Icons.thumb_up_rounded,
-      iconMain: Icons.handshake_rounded,
-    ),
-    _OnboardingData(
-      title: 'คนขับ',
-      titleHighlight: 'ที่ไว้ใจได้',
-      description:
-          'คนขับที่ผ่านการตรวจสอบ มีคะแนนรีวิวจริง ติดตามการเดินทางแบบ real-time ปลอดภัยทุกเส้นทาง',
-      badgeLabel: 'คะแนนเฉลี่ย',
-      badgeValue: '4.9 ★',
-      badgeIcon: Icons.verified_rounded,
-      iconMain: Icons.shield_rounded,
-    ),
-    _OnboardingData(
-      title: 'เดินทางได้ทุก',
-      titleHighlight: 'ที่ทุกเวลา',
-      description:
-          'เรียกรถได้ทันที ไม่ว่าจะเป็นแท็กซี่ มอเตอร์ไซค์ หรือตุ๊กตุ๊ก มีให้เลือกครบทุกประเภท',
-      badgeLabel: 'พร้อมให้บริการ',
-      badgeValue: '24/7',
-      badgeIcon: Icons.access_time_rounded,
-      iconMain: Icons.directions_car_rounded,
-    ),
-  ];
 
   @override
   void initState() {
@@ -84,6 +54,42 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   @override
   Widget build(BuildContext context) {
+    final t = context.watch<LocaleProvider>().t;
+
+    // Build pages list with translations
+    final pages = [
+      _OnboardingData(
+        title: 'ตั้งราคาที่คุณ',
+        titleHighlight: 'แฟร์',
+        description:
+            'เลือกราคาที่คุณพอใจ เสนอราคาได้เอง คนขับพร้อมรับข้อเสนอของคุณ เดินทางสบายใจในราคาที่คุณกำหนด',
+        badgeLabel: 'ราคาที่ตกลงกัน',
+        badgeValue: '฿120.00',
+        badgeIcon: Icons.thumb_up_rounded,
+        iconMain: Icons.handshake_rounded,
+      ),
+      _OnboardingData(
+        title: 'คนขับ',
+        titleHighlight: 'ที่ไว้ใจได้',
+        description:
+            'คนขับที่ผ่านการตรวจสอบ มีคะแนนรีวิวจริง ติดตามการเดินทางแบบ real-time ปลอดภัยทุกเส้นทาง',
+        badgeLabel: 'คะแนนเฉลี่ย',
+        badgeValue: '4.9 ★',
+        badgeIcon: Icons.verified_rounded,
+        iconMain: Icons.shield_rounded,
+      ),
+      _OnboardingData(
+        title: 'เดินทางได้ทุก',
+        titleHighlight: 'ที่ทุกเวลา',
+        description:
+            'เรียกรถได้ทันที ไม่ว่าจะเป็นแท็กซี่ มอเตอร์ไซค์ หรือตุ๊กตุ๊ก มีให้เลือกครบทุกประเภท',
+        badgeLabel: 'พร้อมให้บริการ',
+        badgeValue: '24/7',
+        badgeIcon: Icons.access_time_rounded,
+        iconMain: Icons.directions_car_rounded,
+      ),
+    ];
+
     return Scaffold(
       backgroundColor: const Color(0xFFF6F8F8),
       body: SafeArea(
@@ -102,9 +108,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                     borderRadius: BorderRadius.circular(20),
                   ),
                 ),
-                child: const Text(
-                  'ข้าม (Skip)',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                child: Text(
+                  t.onboardingSkip,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
                 ),
               ),
             ),
@@ -117,10 +123,10 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   child: PageView.builder(
                     controller: _pageController,
                     onPageChanged: (i) => setState(() => _currentPage = i),
-                    itemCount: _pages.length,
+                    itemCount: pages.length,
                     itemBuilder: (context, index) {
                       return _OnboardingPage(
-                        data: _pages[index],
+                        data: pages[index],
                         floatAnimation: _floatAnimation,
                       );
                     },
@@ -145,7 +151,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       // Pagination dots
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(_pages.length, (i) {
+                        children: List.generate(pages.length, (i) {
                           return AnimatedContainer(
                             duration: const Duration(milliseconds: 300),
                             margin: const EdgeInsets.symmetric(horizontal: 3),
@@ -180,9 +186,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                _currentPage < _pages.length - 1
-                                    ? 'ต่อไป'
-                                    : 'เริ่มต้นใช้งาน',
+                                _currentPage < pages.length - 1
+                                    ? t.onboardingNext
+                                    : t.onboardingStart,
                                 style: const TextStyle(
                                   fontSize: 17,
                                   fontWeight: FontWeight.bold,

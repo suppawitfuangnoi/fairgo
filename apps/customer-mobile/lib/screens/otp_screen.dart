@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../config/theme.dart';
 import '../providers/auth_provider.dart';
+import '../providers/locale_provider.dart';
 
 class OtpScreen extends StatefulWidget {
   const OtpScreen({super.key});
@@ -34,6 +35,7 @@ class _OtpScreenState extends State<OtpScreen> {
   @override
   Widget build(BuildContext context) {
     final phone = ModalRoute.of(context)!.settings.arguments as String;
+    final t = context.watch<LocaleProvider>().t;
 
     return Scaffold(
       appBar: AppBar(
@@ -50,9 +52,9 @@ class _OtpScreenState extends State<OtpScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Verify Your Number',
-                style: TextStyle(
+              Text(
+                t.otpTitle,
+                style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: FairGoTheme.textPrimary,
@@ -60,7 +62,7 @@ class _OtpScreenState extends State<OtpScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'We sent a 6-digit OTP code to\n$phone',
+                t.otpSubtitle(phone),
                 style: const TextStyle(
                   fontSize: 14,
                   color: FairGoTheme.textSecondary,
@@ -128,15 +130,15 @@ class _OtpScreenState extends State<OtpScreen> {
                     final auth = Provider.of<AuthProvider>(context, listen: false);
                     auth.requestOtp(phone);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('OTP resent! (Dev: use 123456)'),
+                      SnackBar(
+                        content: Text(t.otpResend),
                         backgroundColor: FairGoTheme.primaryCyan,
                       ),
                     );
                   },
-                  child: const Text(
-                    'Resend OTP',
-                    style: TextStyle(color: FairGoTheme.primaryCyan),
+                  child: Text(
+                    t.otpResend,
+                    style: const TextStyle(color: FairGoTheme.primaryCyan),
                   ),
                 ),
               ),
@@ -154,7 +156,7 @@ class _OtpScreenState extends State<OtpScreen> {
                               color: Colors.white,
                             ),
                           )
-                        : const Text('Verify'),
+                        : Text(t.otpVerify),
                   );
                 },
               ),

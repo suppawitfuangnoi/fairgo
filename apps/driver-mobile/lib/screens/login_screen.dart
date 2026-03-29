@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../config/theme.dart';
 import '../config/constants.dart';
 import '../providers/auth_provider.dart';
+import '../providers/locale_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -33,6 +34,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.watch<LocaleProvider>().t;
+    final localeProvider = context.watch<LocaleProvider>();
+
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -42,6 +46,28 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Language toggle button at top right
+                Align(
+                  alignment: Alignment.topRight,
+                  child: GestureDetector(
+                    onTap: () => localeProvider.toggleLocale(),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: FairGoTheme.primaryCyan.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        localeProvider.isThai ? 'English' : 'ไทย',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: FairGoTheme.primaryCyan,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
                 const Spacer(flex: 1),
                 Center(
                   child: Container(
@@ -62,11 +88,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Center(
-                  child: Text('Sign in with your phone number', style: TextStyle(fontSize: 14, color: FairGoTheme.textSecondary)),
+                Center(
+                  child: Text(t.loginSubtitle, style: const TextStyle(fontSize: 14, color: FairGoTheme.textSecondary)),
                 ),
                 const SizedBox(height: 40),
-                const Text('Phone Number', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                Text(t.loginPhoneLabel, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 8),
                 Row(
                   children: [
@@ -90,10 +116,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: TextFormField(
                         controller: _phoneController,
                         keyboardType: TextInputType.phone,
-                        decoration: const InputDecoration(hintText: '8X XXX XXXX'),
+                        decoration: InputDecoration(hintText: t.loginPhonePlaceholder),
                         validator: (value) {
-                          if (value == null || value.trim().isEmpty) return 'Enter phone number';
-                          if (value.trim().length < 9) return 'Too short';
+                          if (value == null || value.trim().isEmpty) {
+                            return localeProvider.isThai ? 'กรุณากรอกเบอร์โทร' : 'Enter phone number';
+                          }
+                          if (value.trim().length < 9) {
+                            return localeProvider.isThai ? 'เบอร์โทรสั้นเกินไป' : 'Too short';
+                          }
                           return null;
                         },
                       ),
@@ -118,16 +148,55 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: auth.isLoading ? null : _requestOtp,
                       child: auth.isLoading
                           ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                          : const Text('Continue'),
+                          : Text(t.loginContinue),
                     );
                   },
                 ),
                 const Spacer(flex: 2),
                 Center(
-                  child: Text(
-                    'By continuing, you agree to FAIRGO\'s\nDriver Terms and Privacy Policy',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    children: [
+                      Text(
+                        t.loginAgreementPrefix,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                      ),
+                      const SizedBox(width: 4),
+                      GestureDetector(
+                        onTap: () {},
+                        child: Text(
+                          t.loginTerms,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: FairGoTheme.primaryCyan,
+                            fontWeight: FontWeight.w600,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        t.loginAgreementMid,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                      ),
+                      const SizedBox(width: 4),
+                      GestureDetector(
+                        onTap: () {},
+                        child: Text(
+                          t.loginPrivacy,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: FairGoTheme.primaryCyan,
+                            fontWeight: FontWeight.w600,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

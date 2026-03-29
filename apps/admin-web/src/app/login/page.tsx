@@ -4,9 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import { setAuth } from "@/lib/auth";
+import { useLang } from "@/lib/lang-context";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { t, lang, toggle } = useLang();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -51,9 +53,9 @@ export default function LoginPage() {
             <span className="material-icons-round text-white text-4xl">directions_car</span>
           </div>
           <h1 className="text-4xl font-extrabold text-white tracking-tight mb-2">FAIRGO</h1>
-          <p className="text-white/80 text-lg font-medium mb-8">Admin Management Portal</p>
+          <p className="text-white/80 text-lg font-medium mb-8">{t.loginPortalLabel}</p>
           <div className="space-y-3 text-left max-w-xs">
-            {["Real-time trip monitoring", "Driver verification & management", "Pricing policy control", "Analytics & reports"].map(f => (
+            {[t.loginFeature1, t.loginFeature2, t.loginFeature3, t.loginFeature4].map(f => (
               <div key={f} className="flex items-center gap-3 text-white/90 text-sm">
                 <span className="material-icons-round text-white/60 text-base">check_circle</span>
                 {f}
@@ -72,12 +74,23 @@ export default function LoginPage() {
               <span className="material-icons-round text-white text-3xl">directions_car</span>
             </div>
             <h1 className="text-2xl font-extrabold text-fairgo-dark">FAIRGO</h1>
-            <p className="text-xs text-primary font-semibold uppercase tracking-widest mt-1">Admin Portal</p>
+            <p className="text-xs text-primary font-semibold uppercase tracking-widest mt-1">{t.navAdminPortal}</p>
           </div>
 
           <div className="bg-white rounded-2xl shadow-card p-7">
-            <h2 className="text-xl font-bold text-fairgo-dark mb-1">Sign In</h2>
-            <p className="text-sm text-gray-400 mb-6">Enter your admin credentials to continue</p>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-bold text-fairgo-dark mb-1">{t.loginTitle}</h2>
+                <p className="text-sm text-gray-400">{t.loginSubtitle}</p>
+              </div>
+              <button
+                onClick={toggle}
+                className="w-9 h-9 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-xl transition text-xs font-bold border border-gray-100"
+                title={t.language}
+              >
+                {lang === "th" ? "EN" : "TH"}
+              </button>
+            </div>
 
             <form onSubmit={handleLogin} className="space-y-4">
               {error && (
@@ -88,7 +101,7 @@ export default function LoginPage() {
               )}
 
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Email Address</label>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">{t.loginEmail}</label>
                 <div className="relative">
                   <span className="absolute left-3.5 top-1/2 -translate-y-1/2 material-icons-round text-gray-300 text-lg">mail</span>
                   <input
@@ -103,7 +116,7 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Password</label>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">{t.loginPassword}</label>
                 <div className="relative">
                   <span className="absolute left-3.5 top-1/2 -translate-y-1/2 material-icons-round text-gray-300 text-lg">lock</span>
                   <input
@@ -125,12 +138,12 @@ export default function LoginPage() {
                 {loading ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Signing in...
+                    {t.loginLoading}
                   </>
                 ) : (
                   <>
                     <span className="material-icons-round text-lg">login</span>
-                    Sign In to Dashboard
+                    {t.loginSubmit}
                   </>
                 )}
               </button>

@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { apiFetch } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import { useLang } from "@/lib/lang-context";
 
 interface PricingRule {
   id?: string;
@@ -37,6 +38,7 @@ export default function PricingPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [msg, setMsg] = useState("");
+  const { t } = useLang();
 
   useEffect(() => {
     const load = async () => {
@@ -80,8 +82,8 @@ export default function PricingPage() {
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-fairgo-dark">Pricing Policy</h1>
-          <p className="text-sm text-gray-400 mt-0.5">Configure fare rates per vehicle type</p>
+          <h1 className="text-xl font-bold text-fairgo-dark">{t.pricingTitle}</h1>
+          <p className="text-sm text-gray-400 mt-0.5">{t.pricingSubtitle}</p>
         </div>
       </div>
 
@@ -126,7 +128,7 @@ export default function PricingPage() {
                   { label: "Minimum Fare (฿)", field: "minimumFare" as keyof PricingRule, min: 0, step: 5 },
                 ].map(f => (
                   <div key={f.field}>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">{f.label}</label>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">{f.label.replace("(฿)", `(${t.baht})`)}</label>
                     <input
                       type="number"
                       value={rule[f.field] as number}

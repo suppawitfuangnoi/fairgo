@@ -3,6 +3,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import '../config/theme.dart';
 import '../providers/ride_provider.dart';
+import '../providers/locale_provider.dart';
 import '../services/location_service.dart';
 
 class RideRequestScreen extends StatefulWidget {
@@ -48,12 +49,13 @@ class _RideRequestScreenState extends State<RideRequestScreen> {
   }
 
   Future<void> _initLocation() async {
+    final t = Provider.of<LocaleProvider>(context, listen: false).t;
     final pos = await LocationService.instance.getCurrentLocation();
     if (pos != null && mounted) {
       setState(() {
         _pickupLat = pos.latitude;
         _pickupLng = pos.longitude;
-        _pickupController.text = 'ตำแหน่งของฉัน';
+        _pickupController.text = t.rideCurrentLocation;
         _loadingLocation = false;
       });
       _animateMap();
@@ -150,6 +152,8 @@ class _RideRequestScreenState extends State<RideRequestScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.watch<LocaleProvider>().t;
+    final localeProvider = context.watch<LocaleProvider>();
     return Scaffold(
       body: Consumer<RideProvider>(
         builder: (context, ride, _) {
@@ -243,9 +247,9 @@ class _RideRequestScreenState extends State<RideRequestScreen> {
                                 ),
                               ],
                             ),
-                            child: const Text(
-                              'Set Your Fare',
-                              style: TextStyle(
+                            child: Text(
+                              t.rideRequestTitle,
+                              style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
                                 color: FairGoTheme.textPrimary,
@@ -272,9 +276,11 @@ class _RideRequestScreenState extends State<RideRequestScreen> {
                       color: Colors.white.withValues(alpha: 0.9),
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Text(
-                      'Tap map to set drop-off location',
-                      style: TextStyle(
+                    child: Text(
+                      localeProvider.isThai
+                          ? 'แตะแผนที่เพื่อตั้งจุดหมาย'
+                          : 'Tap map to set drop-off location',
+                      style: const TextStyle(
                           fontSize: 11, color: FairGoTheme.textSecondary),
                     ),
                   ),
@@ -382,7 +388,7 @@ class _RideRequestScreenState extends State<RideRequestScreen> {
                                     children: [
                                       Text(
                                         _pickupController.text.isEmpty
-                                            ? 'Current location'
+                                            ? t.rideCurrentLocation
                                             : _pickupController.text,
                                         style: const TextStyle(
                                             fontSize: 12,
@@ -431,7 +437,7 @@ class _RideRequestScreenState extends State<RideRequestScreen> {
                             children: [
                               _VehicleOption(
                                 icon: Icons.local_taxi_rounded,
-                                label: 'Taxi',
+                                label: t.vehicleTaxi,
                                 isSelected: _vehicleType == 'TAXI',
                                 onTap: () {
                                   setState(() => _vehicleType = 'TAXI');
@@ -441,7 +447,7 @@ class _RideRequestScreenState extends State<RideRequestScreen> {
                               const SizedBox(width: 8),
                               _VehicleOption(
                                 icon: Icons.two_wheeler_rounded,
-                                label: 'Moto',
+                                label: t.vehicleMoto,
                                 isSelected: _vehicleType == 'MOTORCYCLE',
                                 onTap: () {
                                   setState(
@@ -452,7 +458,7 @@ class _RideRequestScreenState extends State<RideRequestScreen> {
                               const SizedBox(width: 8),
                               _VehicleOption(
                                 icon: Icons.electric_rickshaw_rounded,
-                                label: 'Tuk-Tuk',
+                                label: t.vehicleTuktuk,
                                 isSelected: _vehicleType == 'TUKTUK',
                                 onTap: () {
                                   setState(() => _vehicleType = 'TUKTUK');
@@ -514,8 +520,8 @@ class _RideRequestScreenState extends State<RideRequestScreen> {
                                     const SizedBox(width: 6),
                                     Text(
                                       isFair
-                                          ? 'ราคานี้แฟร์สำหรับคุณและคนขับ'
-                                          : 'ลองเพิ่มราคาเพื่อหาคนขับเร็วขึ้น',
+                                          ? (localeProvider.isThai ? 'ราคานี้แฟร์สำหรับคุณและคนขับ' : 'Fair price for you and the driver')
+                                          : (localeProvider.isThai ? 'ลองเพิ่มราคาเพื่อหาคนขับเร็วขึ้น' : 'Increase offer to find drivers faster'),
                                       style: TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w600,
@@ -555,7 +561,7 @@ class _RideRequestScreenState extends State<RideRequestScreen> {
                                         color: FairGoTheme.textSecondary),
                                   ),
                                   Text(
-                                    'Recommended ฿${recommended.toStringAsFixed(0)}',
+                                    '${localeProvider.isThai ? 'แนะนำ' : 'Recommended'} ฿${recommended.toStringAsFixed(0)}',
                                     style: const TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,
@@ -576,9 +582,9 @@ class _RideRequestScreenState extends State<RideRequestScreen> {
                             // Quick adjust buttons
                             Row(
                               children: [
-                                const Text(
-                                  'Quick adjust: ',
-                                  style: TextStyle(
+                                Text(
+                                  localeProvider.isThai ? 'ปรับราคา: ' : 'Quick adjust: ',
+                                  style: const TextStyle(
                                       fontSize: 12,
                                       color: FairGoTheme.textSecondary),
                                 ),
@@ -663,7 +669,9 @@ class _RideRequestScreenState extends State<RideRequestScreen> {
                                             color: Colors.white),
                                       )
                                     : Text(
-                                        'เรียกแฟร์โก · ฿${_fareOffer.toStringAsFixed(0)}',
+                                        localeProvider.isThai
+                                            ? 'เรียกแฟร์โก · ฿${_fareOffer.toStringAsFixed(0)}'
+                                            : 'Request FAIRGO · ฿${_fareOffer.toStringAsFixed(0)}',
                                         style: const TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.bold,

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../config/theme.dart';
 import '../providers/ride_provider.dart';
+import '../providers/locale_provider.dart';
 import '../services/socket_service.dart';
 
 class TripActiveScreen extends StatefulWidget {
@@ -66,6 +67,8 @@ class _TripActiveScreenState extends State<TripActiveScreen>
 
   @override
   Widget build(BuildContext context) {
+    final t = context.watch<LocaleProvider>().t;
+
     return Scaffold(
       body: Consumer<RideProvider>(
         builder: (context, ride, _) {
@@ -107,14 +110,14 @@ class _TripActiveScreenState extends State<TripActiveScreen>
                   Marker(
                     markerId: const MarkerId('pickup'),
                     position: LatLng(pickupLat, pickupLng),
-                    infoWindow: const InfoWindow(title: 'จุดรับ'),
+                    infoWindow: InfoWindow(title: t.tripPickupMarker),
                     icon: BitmapDescriptor.defaultMarkerWithHue(
                         BitmapDescriptor.hueCyan),
                   ),
                   Marker(
                     markerId: const MarkerId('dropoff'),
                     position: LatLng(dropoffLat, dropoffLng),
-                    infoWindow: const InfoWindow(title: 'จุดส่ง'),
+                    infoWindow: InfoWindow(title: t.tripDropoffMarker),
                     icon: BitmapDescriptor.defaultMarkerWithHue(
                         BitmapDescriptor.hueRed),
                   ),
@@ -169,7 +172,7 @@ class _TripActiveScreenState extends State<TripActiveScreen>
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    _statusLabel(status),
+                                    _statusLabel(status, t),
                                     style: const TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,
@@ -227,15 +230,15 @@ class _TripActiveScreenState extends State<TripActiveScreen>
                           ),
                         ],
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.check_circle_rounded,
+                          const Icon(Icons.check_circle_rounded,
                               color: Colors.white, size: 16),
-                          SizedBox(width: 6),
+                          const SizedBox(width: 6),
                           Text(
-                            'คนขับมาถึงแล้ว!',
-                            style: TextStyle(
+                            t.tripDriverNearby,
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
@@ -371,13 +374,13 @@ class _TripActiveScreenState extends State<TripActiveScreen>
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.verified_rounded,
+                            const Icon(Icons.verified_rounded,
                                 size: 14,
                                 color: FairGoTheme.success),
                             const SizedBox(width: 6),
-                            const Text(
-                              'ล็อกราคาแล้ว สบายใจได้',
-                              style: TextStyle(
+                            Text(
+                              t.tripPriceLocked,
+                              style: const TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                                 color: FairGoTheme.success,
@@ -396,7 +399,7 @@ class _TripActiveScreenState extends State<TripActiveScreen>
                               onPressed: () {},
                               icon: const Icon(Icons.chat_bubble_rounded,
                                   size: 16),
-                              label: const Text('แชท'),
+                              label: Text(t.tripChat),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: FairGoTheme.primaryCyan,
                                 side: BorderSide(
@@ -414,7 +417,7 @@ class _TripActiveScreenState extends State<TripActiveScreen>
                             child: ElevatedButton.icon(
                               onPressed: () {},
                               icon: const Icon(Icons.phone_rounded, size: 16),
-                              label: const Text('โทรหาคนขับ'),
+                              label: Text(t.tripCallDriver),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: FairGoTheme.primaryCyan,
                                 foregroundColor: Colors.white,
@@ -439,18 +442,18 @@ class _TripActiveScreenState extends State<TripActiveScreen>
     );
   }
 
-  String _statusLabel(String status) {
+  String _statusLabel(String status, AppTranslations t) {
     switch (status) {
       case 'DRIVER_ASSIGNED':
-        return 'คนขับได้รับงาน · กำลังมารับ';
+        return t.tripStatusAssigned;
       case 'DRIVER_EN_ROUTE':
-        return 'กำลังเดินทางมารับ ~5 นาที';
+        return t.tripStatusEnRoute;
       case 'DRIVER_ARRIVED':
-        return 'คนขับมาถึงแล้ว!';
+        return t.tripStatusArrived;
       case 'PICKUP_CONFIRMED':
-        return 'เริ่มการเดินทาง';
+        return t.tripStatusPickupConfirmed;
       case 'IN_PROGRESS':
-        return 'กำลังเดินทางไปจุดหมาย';
+        return t.tripStatusInProgress;
       default:
         return status.replaceAll('_', ' ');
     }
