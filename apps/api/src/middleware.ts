@@ -21,12 +21,15 @@ function getAllowedOrigins(): string[] {
 
 export function middleware(request: NextRequest) {
   const origin = request.headers.get("origin") || "";
-  const isDev = true;
+  // Allow localhost in dev: NODE_ENV=development OR explicit ALLOW_LOCALHOST_CORS=true
+  const allowLocalhost =
+    process.env.NODE_ENV !== "production" ||
+    process.env.ALLOW_LOCALHOST_CORS === "true";
   const isAllowed =
     getAllowedOrigins().includes(origin) ||
     !origin ||
     process.env.CUSTOMER_APP_URL === "*" ||
-    (isDev && isLocalhostOrigin(origin));
+    (allowLocalhost && isLocalhostOrigin(origin));
 
   // Handle preflight OPTIONS requests
   if (request.method === "OPTIONS") {
