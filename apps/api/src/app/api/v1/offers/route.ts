@@ -5,6 +5,7 @@ import { successResponse, errorResponse } from "@/lib/api-response";
 import { validateBody } from "@/middleware/validate";
 import { createRideOfferSchema } from "@/lib/validation";
 import { JwtPayload } from "@/lib/jwt";
+import { emitToUser } from "@/lib/socket";
 
 export async function POST(request: NextRequest) {
   try {
@@ -65,10 +66,14 @@ export async function POST(request: NextRequest) {
     });
 
     // Update ride request status to MATCHING
-    await prisma.rideRequest.update({
+    const updatedRide = await prisma.rideRequest.update({
       where: { id: result.data.rideRequestId },
+      include: { customerProfile: true },
       data: { status: "MATCHING" },
     });
+
+    // Notify customer in real-time
+    emitToUser(updatedRide.customerProfile.userId, "offer:new", offer);
 
     return successResponse(offer, "Offer submitted successfully", 201);
   } catch (error) {

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../config/theme.dart';
+import '../config/constants.dart';
 import '../providers/auth_provider.dart';
 import '../providers/ride_provider.dart';
+import '../services/location_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -121,64 +124,12 @@ class _HomeTab extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
-              // Map placeholder with search
-              Container(
-                height: 220,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE8F5E9),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFFE0E0E0)),
-                ),
-                child: Stack(
-                  children: [
-                    const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.map_rounded, size: 48, color: FairGoTheme.primaryCyan),
-                          SizedBox(height: 8),
-                          Text(
-                            'Map View',
-                            style: TextStyle(
-                              color: FairGoTheme.textSecondary,
-                              fontSize: 14,
-                            ),
-                          ),
-                          Text(
-                            'Google Maps integration in Phase 2',
-                            style: TextStyle(
-                              color: Color(0xFFBDBDBD),
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Current location button
-                    Positioned(
-                      bottom: 12,
-                      right: 12,
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
-                              blurRadius: 6,
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.my_location_rounded,
-                          color: FairGoTheme.primaryCyan,
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                  ],
+              // Google Map
+              ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: SizedBox(
+                  height: 220,
+                  child: _HomeMapWidget(),
                 ),
               ),
               const SizedBox(height: 20),
@@ -695,6 +646,69 @@ class _ProfileMenuItem extends StatelessWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         contentPadding: const EdgeInsets.symmetric(horizontal: 12),
       ),
+    );
+  }
+}
+
+// ==================== HOME MAP WIDGET ====================
+class _HomeMapWidget extends StatefulWidget {
+  @override
+  State<_HomeMapWidget> createState() => _HomeMapWidgetState();
+}
+
+class _HomeMapWidgetState extends State<_HomeMapWidget> {
+  GoogleMapController? _controller;
+  LatLng _center = LatLng(AppConstants.defaultLatitude, AppConstants.defaultLongitude);
+  Set<Marker> _markers = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentLocation();
+  }
+
+  Future<void> _loadCurrentLocation() async {
+    final position = await LocationService().getCurrentPosition();
+    if (position != null && mounted) {
+      final latLng = LatLng(position.latitude, position.longitude);
+      setState(() {
+        _center = latLng;
+        _markers = {
+          Marker(
+            markerId: const MarkerId('current'),
+            position: latLng,
+            infoWindow: const InfoWindow(title: 'You are here'),
+          ),
+        };
+      });
+      _controller?.animateCamera(CameraUpdate.newLatLngZoom(latLng, 15));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        GoogleMap(
+          initialCameraPosition: CameraPosition(target: _center, zoom: 14),
+          markers: _markers,
+          myLocationEnabled: true,
+          myLocationButtonEnabled: false,
+          zoomControlsEnabled: false,
+          mapToolbarEnabled: false,
+          onMapCreated: (controller) => _controller = controller,
+        ),
+        Positioned(
+          bottom: 10,
+          right: 10,
+          child: FloatingActionButton.small(
+            heroTag: 'home_location',
+            backgroundColor: Colors.white,
+            onPressed: _loadCurrentLocation,
+            child: const Icon(Icons.my_location_rounded, color: FairGoTheme.primaryCyan),
+          ),
+        ),
+      ],
     );
   }
 }

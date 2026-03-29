@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../services/socket_service.dart';
 
 class JobProvider extends ChangeNotifier {
   final ApiService _api = ApiService();
+  final SocketService _socket = SocketService();
+  Map<String, dynamic>? _activeTrip;
   bool _isLoading = false;
   String? _error;
   List<dynamic> _nearbyRides = [];
@@ -14,6 +17,7 @@ class JobProvider extends ChangeNotifier {
   List<dynamic> get nearbyRides => _nearbyRides;
   List<dynamic> get myOffers => _myOffers;
   List<dynamic> get tripHistory => _tripHistory;
+  Map<String, dynamic>? get activeTrip => _activeTrip;
 
   Future<void> loadNearbyRides({
     double lat = 13.7563,
@@ -90,6 +94,35 @@ class JobProvider extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  // Start listening for real-time ride requests from Socket.IO
+  void startListening() {
+    _socket.onNewRideRequest((ride) {
+      final exists = _nearbyRides.any((r) => r['id'] == ride['id']);
+      if (!exists) {
+        _nearbyRides.insert(0, ride);
+        notifyListeners();
+      }
+    });
+
+    _socket.onTripCreated((trip) {
+      _activeTrip = trip;
+      // Join trip room for real-time status updates
+      _socket.joinTrip(trip['id']);
+      notifyListeners();
+    });
+
+    _socket.onOfferRejected((_) {
+      // Refresh offers list when an offer is rejected
+      loadMyOffers();
+    });
+  }
+
+  void stopListening() {
+    _socket.off('ride:new_request');
+    _socket.off('trip:created');
+    _socket.off('offer:rejected');
   }
 
   void clearError() {

@@ -6,6 +6,7 @@ import { validateBody } from "@/middleware/validate";
 import { updateTripStatusSchema } from "@/lib/validation";
 import { TripStatus } from "@prisma/client";
 import { JwtPayload } from "@/lib/jwt";
+import { emitToRoom } from "@/lib/socket";
 
 const VALID_TRANSITIONS: Record<TripStatus, TripStatus[]> = {
   DRIVER_ASSIGNED: ["DRIVER_EN_ROUTE", "CANCELLED"],
@@ -101,6 +102,10 @@ export async function PATCH(
         payment: true,
       },
     });
+
+    // Notify both customer and driver via trip room
+    emitToRoom(`trip:${id}`, "trip:status_update", updated);
+    emitToRoom("admin:monitor", "trip:status_update", updated);
 
     return successResponse(updated, `Trip status updated to ${newStatus}`);
   } catch (error) {

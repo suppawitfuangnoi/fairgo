@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import '../config/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/job_provider.dart';
+import '../services/location_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -64,12 +66,61 @@ class _JobListTab extends StatefulWidget {
 }
 
 class _JobListTabState extends State<_JobListTab> {
+  GoogleMapController? _mapController;
+  LatLng _driverLocation = const LatLng(13.7563, 100.5018);
+  bool _mapReady = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<JobProvider>(context, listen: false).loadNearbyRides();
+      _initLocation();
     });
+  }
+
+  Future<void> _initLocation() async {
+    final pos = await LocationService().getCurrentPosition();
+    if (pos != null && mounted) {
+      setState(() {
+        _driverLocation = LatLng(pos.latitude, pos.longitude);
+      });
+      _mapController?.animateCamera(CameraUpdate.newLatLng(_driverLocation));
+    }
+  }
+
+  Set<Marker> _buildMarkers(List<dynamic> rides) {
+    final markers = <Marker>{};
+    // Driver marker
+    markers.add(Marker(
+      markerId: const MarkerId('driver'),
+      position: _driverLocation,
+      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+      infoWindow: const InfoWindow(title: 'You'),
+    ));
+    // Ride pickup markers
+    for (final ride in rides) {
+      final lat = ride['pickupLatitude'];
+      final lng = ride['pickupLongitude'];
+      if (lat != null && lng != null) {
+        markers.add(Marker(
+          markerId: MarkerId(ride['id'] ?? UniqueKey().toString()),
+          position: LatLng((lat as num).toDouble(), (lng as num).toDouble()),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueCyan),
+          infoWindow: InfoWindow(
+            title: ride['pickupAddress'] ?? 'Pickup',
+            snippet: '฿${ride['fareOffer']?.toStringAsFixed(0) ?? '0'}',
+          ),
+        ));
+      }
+    }
+    return markers;
+  }
+
+  @override
+  void dispose() {
+    _mapController?.dispose();
+    super.dispose();
   }
 
   @override
@@ -156,15 +207,41 @@ class _JobListTabState extends State<_JobListTab> {
               },
             ),
           ),
+          // Map view showing driver location + nearby pickups
+          Consumer<JobProvider>(
+            builder: (context, jobs, _) {
+              return SizedBox(
+                height: 200,
+                child: GoogleMap(
+                  initialCameraPosition: CameraPosition(
+                    target: _driverLocation,
+                    zoom: 14,
+                  ),
+                  onMapCreated: (controller) {
+                    _mapController = controller;
+                    setState(() => _mapReady = true);
+                  },
+                  markers: _buildMarkers(jobs.nearbyRides),
+                  myLocationEnabled: true,
+                  myLocationButtonEnabled: false,
+                  zoomControlsEnabled: false,
+                  mapToolbarEnabled: false,
+                ),
+              );
+            },
+          ),
           // Nearby rides header
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text('Nearby Ride Requests', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                 GestureDetector(
-                  onTap: () => Provider.of<JobProvider>(context, listen: false).loadNearbyRides(),
+                  onTap: () {
+                    Provider.of<JobProvider>(context, listen: false).loadNearbyRides();
+                    _initLocation();
+                  },
                   child: const Icon(Icons.refresh_rounded, color: FairGoTheme.primaryCyan, size: 22),
                 ),
               ],

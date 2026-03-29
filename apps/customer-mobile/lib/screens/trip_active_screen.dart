@@ -1,10 +1,51 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../config/theme.dart';
 import '../providers/ride_provider.dart';
+import '../services/socket_service.dart';
 
-class TripActiveScreen extends StatelessWidget {
+class TripActiveScreen extends StatefulWidget {
   const TripActiveScreen({super.key});
+
+  @override
+  State<TripActiveScreen> createState() => _TripActiveScreenState();
+}
+
+class _TripActiveScreenState extends State<TripActiveScreen> {
+  GoogleMapController? _mapController;
+  LatLng? _driverLocation;
+  Set<Marker> _markers = {};
+
+  @override
+  void initState() {
+    super.initState();
+    SocketService().onDriverLocation((data) {
+      final lat = (data['lat'] as num).toDouble();
+      final lng = (data['lng'] as num).toDouble();
+      final pos = LatLng(lat, lng);
+      if (mounted) {
+        setState(() {
+          _driverLocation = pos;
+          _markers = {
+            Marker(
+              markerId: const MarkerId('driver'),
+              position: pos,
+              infoWindow: const InfoWindow(title: 'Driver'),
+              icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+            ),
+          };
+        });
+        _mapController?.animateCamera(CameraUpdate.newLatLng(pos));
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    SocketService().off('trip:driver:location');
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,47 +61,62 @@ class TripActiveScreen extends StatelessWidget {
           final driverUser = driver?['user'];
           final status = trip['status'] ?? 'DRIVER_ASSIGNED';
 
+          final pickupLat = (trip['pickupLatitude'] as num?)?.toDouble() ?? 13.7563;
+          final pickupLng = (trip['pickupLongitude'] as num?)?.toDouble() ?? 100.5018;
+          final dropoffLat = (trip['dropoffLatitude'] as num?)?.toDouble() ?? 13.7563;
+          final dropoffLng = (trip['dropoffLongitude'] as num?)?.toDouble() ?? 100.5018;
+
           return SafeArea(
             child: Column(
               children: [
-                // Map placeholder
+                // Google Map with real-time driver tracking
                 Expanded(
                   flex: 3,
-                  child: Container(
-                    width: double.infinity,
-                    color: const Color(0xFFE8F5E9),
-                    child: Stack(
-                      children: [
-                        const Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.map_rounded, size: 48, color: FairGoTheme.primaryCyan),
-                              SizedBox(height: 8),
-                              Text('Live Trip Tracking', style: TextStyle(color: FairGoTheme.textSecondary)),
-                              Text('Google Maps in Phase 2', style: TextStyle(fontSize: 11, color: Color(0xFFBDBDBD))),
-                            ],
-                          ),
+                  child: Stack(
+                    children: [
+                      GoogleMap(
+                        initialCameraPosition: CameraPosition(
+                          target: LatLng(pickupLat, pickupLng),
+                          zoom: 14,
                         ),
-                        Positioned(
-                          top: 12,
-                          left: 12,
-                          child: GestureDetector(
-                            onTap: () => Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false),
-                            child: Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(10),
-                                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 6)],
-                              ),
-                              child: const Icon(Icons.arrow_back, size: 20),
+                        markers: {
+                          Marker(
+                            markerId: const MarkerId('pickup'),
+                            position: LatLng(pickupLat, pickupLng),
+                            infoWindow: const InfoWindow(title: 'Pickup'),
+                            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+                          ),
+                          Marker(
+                            markerId: const MarkerId('dropoff'),
+                            position: LatLng(dropoffLat, dropoffLng),
+                            infoWindow: const InfoWindow(title: 'Dropoff'),
+                            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+                          ),
+                          ..._markers,
+                        },
+                        myLocationEnabled: false,
+                        zoomControlsEnabled: false,
+                        mapToolbarEnabled: false,
+                        onMapCreated: (c) => _mapController = c,
+                      ),
+                      Positioned(
+                        top: 12,
+                        left: 12,
+                        child: GestureDetector(
+                          onTap: () => Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false),
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 6)],
                             ),
+                            child: const Icon(Icons.arrow_back, size: 20),
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
 

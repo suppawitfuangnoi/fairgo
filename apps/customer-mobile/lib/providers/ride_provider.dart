@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../services/socket_service.dart';
 
 class RideProvider extends ChangeNotifier {
   final ApiService _api = ApiService();
+  final SocketService _socket = SocketService();
   bool _isLoading = false;
   String? _error;
 
@@ -84,6 +86,8 @@ class RideProvider extends ChangeNotifier {
         'fareOffer': fareOffer,
       });
       _activeRide = result['data'];
+      // Subscribe to real-time offer notifications
+      _listenForOffers();
       _isLoading = false;
       notifyListeners();
       return true;
@@ -146,12 +150,39 @@ class RideProvider extends ChangeNotifier {
     } catch (_) {}
   }
 
+  // Listen for real-time offer notifications from Socket.IO
+  void _listenForOffers() {
+    _socket.onOfferNew((offer) {
+      // Add new offer if not already in list
+      final exists = _offers.any((o) => o['id'] == offer['id']);
+      if (!exists) {
+        _offers.add(offer);
+        notifyListeners();
+      }
+    });
+  }
+
+  // Start listening for trip status updates after trip is created
+  void listenToTrip(String tripId) {
+    _socket.joinTrip(tripId);
+    _socket.onTripStatusUpdate((trip) {
+      _activeTrip = trip;
+      notifyListeners();
+    });
+  }
+
+  void stopListeningToTrip(String tripId) {
+    _socket.leaveTrip(tripId);
+    _socket.off('trip:status_update');
+  }
+
   void clearError() {
     _error = null;
     notifyListeners();
   }
 
   void reset() {
+    _socket.off('offer:new');
     _fareEstimate = null;
     _activeRide = null;
     _offers = [];

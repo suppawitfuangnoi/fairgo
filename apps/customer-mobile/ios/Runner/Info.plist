@@ -49,6 +49,10 @@
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>FAIRGO needs your location to show nearby drivers and set your pickup point.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>FAIRGO needs your location to track your ride in the background.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

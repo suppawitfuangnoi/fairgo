@@ -5,6 +5,7 @@ import { successResponse, errorResponse } from "@/lib/api-response";
 import { validateBody } from "@/middleware/validate";
 import { respondToOfferSchema } from "@/lib/validation";
 import { JwtPayload } from "@/lib/jwt";
+import { emitToUser } from "@/lib/socket";
 
 export async function POST(
   request: NextRequest,
@@ -56,6 +57,8 @@ export async function POST(
         where: { id: offerId },
         data: { status: "REJECTED", respondedAt: new Date() },
       });
+      // Notify driver their offer was rejected
+      emitToUser(offer.driverProfile.user.id, "offer:rejected", { offerId });
       return successResponse(null, "Offer rejected");
     }
 
@@ -110,6 +113,9 @@ export async function POST(
 
       return newTrip;
     });
+
+    // Notify driver in real-time that their offer was accepted + trip created
+    emitToUser(offer.driverProfile.user.id, "trip:created", trip);
 
     return successResponse(trip, "Offer accepted. Trip created with fare locked!");
   } catch (error) {
