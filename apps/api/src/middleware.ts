@@ -6,7 +6,7 @@ const STATIC_ORIGINS = [
   "http://localhost:4000",
   "http://localhost:8080",
   "http://localhost:8081",
-  "http://localhost:54472",
+  "http://localhost:54255",
 ];
 
 function getAllowedOrigins(): string[] {
