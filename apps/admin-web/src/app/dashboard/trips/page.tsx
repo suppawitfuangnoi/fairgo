@@ -1,7 +1,15 @@
 "use client";
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import { useAdminSocket } from "@/hooks/useSocket";
+
+const LiveMap = dynamic(() => import("@/components/LiveMap"), { ssr: false, loading: () => (
+  <div className="h-48 flex items-center justify-center">
+    <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+  </div>
+) });
 
 interface Trip {
   id: string; status: string; lockedFare: number; createdAt: string;
@@ -18,6 +26,7 @@ export default function TripsPage() {
   const [status, setStatus] = useState("ALL");
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Trip | null>(null);
+  const { drivers } = useAdminSocket();
 
   const load = async () => {
     try {
@@ -45,15 +54,9 @@ export default function TripsPage() {
           <h2 className="font-semibold text-fairgo-dark">Live Map</h2>
           <span className="flex items-center gap-1.5 text-xs text-emerald-500"><div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />Live tracking</span>
         </div>
-        <div className="map-bg h-48 relative overflow-hidden">
-          {[{ t: "25%", l: "20%" },{ t: "50%", l: "55%" },{ t: "15%", l: "72%" }].map((p,i) => (
-            <div key={i} className="absolute w-8 h-8 bg-primary rounded-full flex items-center justify-center shadow-lg border-2 border-white" style={{ top: p.t, left: p.l }}>
-              <span className="material-icons-round text-white text-sm">local_taxi</span>
-            </div>
-          ))}
-          <div className="absolute top-1/2 left-0 right-0 h-px bg-white/40" />
-          <div className="absolute top-0 bottom-0 left-1/2 w-px bg-white/40" />
-          <div className="absolute bottom-3 right-3 bg-white/90 backdrop-blur rounded-xl px-3 py-1.5 text-xs font-medium text-fairgo-dark shadow">
+        <div className="h-48 relative overflow-hidden">
+          <LiveMap drivers={drivers} height="192px" />
+          <div className="absolute bottom-3 right-3 bg-white/90 backdrop-blur rounded-xl px-3 py-1.5 text-xs font-medium text-fairgo-dark shadow z-10">
             {trips.filter(t => ["IN_PROGRESS","DRIVER_EN_ROUTE"].includes(t.status)).length} cars on road
           </div>
         </div>

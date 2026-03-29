@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import '../config/theme.dart';
 import '../providers/job_provider.dart';
@@ -14,6 +15,7 @@ class _SubmitOfferScreenState extends State<SubmitOfferScreen> {
   double _offerAmount = 0;
   int _etaMinutes = 5;
   final _messageController = TextEditingController();
+  GoogleMapController? _mapController;
 
   @override
   void initState() {
@@ -24,13 +26,63 @@ class _SubmitOfferScreenState extends State<SubmitOfferScreen> {
         setState(() {
           _offerAmount = (ride['fareOffer'] as num?)?.toDouble() ?? 100;
         });
+        _fitMapBounds(ride);
       }
     });
+  }
+
+  void _fitMapBounds(Map<String, dynamic> ride) {
+    final pickupLat = (ride['pickupLatitude'] as num?)?.toDouble();
+    final pickupLng = (ride['pickupLongitude'] as num?)?.toDouble();
+    final dropoffLat = (ride['dropoffLatitude'] as num?)?.toDouble();
+    final dropoffLng = (ride['dropoffLongitude'] as num?)?.toDouble();
+    if (pickupLat == null || pickupLng == null || dropoffLat == null || dropoffLng == null) return;
+    _mapController?.animateCamera(
+      CameraUpdate.newLatLngBounds(
+        LatLngBounds(
+          southwest: LatLng(
+            pickupLat < dropoffLat ? pickupLat - 0.005 : dropoffLat - 0.005,
+            pickupLng < dropoffLng ? pickupLng - 0.005 : dropoffLng - 0.005,
+          ),
+          northeast: LatLng(
+            pickupLat > dropoffLat ? pickupLat + 0.005 : dropoffLat + 0.005,
+            pickupLng > dropoffLng ? pickupLng + 0.005 : dropoffLng + 0.005,
+          ),
+        ),
+        60,
+      ),
+    );
+  }
+
+  Set<Marker> _buildMarkers(Map<String, dynamic> ride) {
+    final markers = <Marker>{};
+    final pickupLat = (ride['pickupLatitude'] as num?)?.toDouble();
+    final pickupLng = (ride['pickupLongitude'] as num?)?.toDouble();
+    final dropoffLat = (ride['dropoffLatitude'] as num?)?.toDouble();
+    final dropoffLng = (ride['dropoffLongitude'] as num?)?.toDouble();
+    if (pickupLat != null && pickupLng != null) {
+      markers.add(Marker(
+        markerId: const MarkerId('pickup'),
+        position: LatLng(pickupLat, pickupLng),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueCyan),
+        infoWindow: InfoWindow(title: 'Pickup', snippet: ride['pickupAddress'] ?? ''),
+      ));
+    }
+    if (dropoffLat != null && dropoffLng != null) {
+      markers.add(Marker(
+        markerId: const MarkerId('dropoff'),
+        position: LatLng(dropoffLat, dropoffLng),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+        infoWindow: InfoWindow(title: 'Drop-off', snippet: ride['dropoffAddress'] ?? ''),
+      ));
+    }
+    return markers;
   }
 
   @override
   void dispose() {
     _messageController.dispose();
+    _mapController?.dispose();
     super.dispose();
   }
 
@@ -74,11 +126,38 @@ class _SubmitOfferScreenState extends State<SubmitOfferScreen> {
         backgroundColor: FairGoTheme.primaryCyan,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Ride details
+            // ==================== ROUTE MAP ====================
+            SizedBox(
+              height: 200,
+              child: GoogleMap(
+                initialCameraPosition: CameraPosition(
+                  target: LatLng(
+                    (ride['pickupLatitude'] as num?)?.toDouble() ?? 13.7563,
+                    (ride['pickupLongitude'] as num?)?.toDouble() ?? 100.5018,
+                  ),
+                  zoom: 13,
+                ),
+                markers: _buildMarkers(ride),
+                onMapCreated: (c) {
+                  _mapController = c;
+                  _fitMapBounds(ride);
+                },
+                myLocationEnabled: false,
+                zoomControlsEnabled: false,
+                mapToolbarEnabled: false,
+                myLocationButtonEnabled: false,
+              ),
+            ),
+
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+            // Ride route summary
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -230,6 +309,9 @@ class _SubmitOfferScreenState extends State<SubmitOfferScreen> {
                   ],
                 );
               },
+            ),
+                ],
+              ),
             ),
           ],
         ),

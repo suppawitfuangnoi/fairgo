@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import '../config/theme.dart';
 import '../providers/ride_provider.dart';
@@ -15,6 +16,7 @@ class _MatchingScreenState extends State<MatchingScreen>
     with SingleTickerProviderStateMixin {
   Timer? _pollTimer;
   late AnimationController _pulseController;
+  GoogleMapController? _mapController;
 
   @override
   void initState() {
@@ -34,7 +36,58 @@ class _MatchingScreenState extends State<MatchingScreen>
   void dispose() {
     _pollTimer?.cancel();
     _pulseController.dispose();
+    _mapController?.dispose();
     super.dispose();
+  }
+
+  Set<Marker> _buildMarkers(Map<String, dynamic>? activeRide) {
+    if (activeRide == null) return {};
+    final markers = <Marker>{};
+    final pickupLat = (activeRide['pickupLatitude'] as num?)?.toDouble();
+    final pickupLng = (activeRide['pickupLongitude'] as num?)?.toDouble();
+    final dropoffLat = (activeRide['dropoffLatitude'] as num?)?.toDouble();
+    final dropoffLng = (activeRide['dropoffLongitude'] as num?)?.toDouble();
+    if (pickupLat != null && pickupLng != null) {
+      markers.add(Marker(
+        markerId: const MarkerId('pickup'),
+        position: LatLng(pickupLat, pickupLng),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueCyan),
+        infoWindow: InfoWindow(title: 'Pickup', snippet: activeRide['pickupAddress'] ?? ''),
+      ));
+    }
+    if (dropoffLat != null && dropoffLng != null) {
+      markers.add(Marker(
+        markerId: const MarkerId('dropoff'),
+        position: LatLng(dropoffLat, dropoffLng),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+        infoWindow: InfoWindow(title: 'Drop-off', snippet: activeRide['dropoffAddress'] ?? ''),
+      ));
+    }
+    return markers;
+  }
+
+  void _fitMapBounds(Map<String, dynamic>? activeRide) {
+    if (activeRide == null) return;
+    final pickupLat = (activeRide['pickupLatitude'] as num?)?.toDouble();
+    final pickupLng = (activeRide['pickupLongitude'] as num?)?.toDouble();
+    final dropoffLat = (activeRide['dropoffLatitude'] as num?)?.toDouble();
+    final dropoffLng = (activeRide['dropoffLongitude'] as num?)?.toDouble();
+    if (pickupLat == null || dropoffLat == null) return;
+    _mapController?.animateCamera(
+      CameraUpdate.newLatLngBounds(
+        LatLngBounds(
+          southwest: LatLng(
+            pickupLat < dropoffLat ? pickupLat - 0.005 : dropoffLat - 0.005,
+            pickupLng! < dropoffLng! ? pickupLng - 0.005 : dropoffLng - 0.005,
+          ),
+          northeast: LatLng(
+            pickupLat > dropoffLat ? pickupLat + 0.005 : dropoffLat + 0.005,
+            pickupLng > dropoffLng ? pickupLng + 0.005 : dropoffLng + 0.005,
+          ),
+        ),
+        60,
+      ),
+    );
   }
 
   Future<void> _acceptOffer(String offerId) async {
@@ -75,10 +128,37 @@ class _MatchingScreenState extends State<MatchingScreen>
           final offers = ride.offers;
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // ==================== ROUTE MAP ====================
+                SizedBox(
+                  height: 200,
+                  child: GoogleMap(
+                    initialCameraPosition: CameraPosition(
+                      target: LatLng(
+                        (activeRide?['pickupLatitude'] as num?)?.toDouble() ?? 13.7563,
+                        (activeRide?['pickupLongitude'] as num?)?.toDouble() ?? 100.5018,
+                      ),
+                      zoom: 13,
+                    ),
+                    markers: _buildMarkers(activeRide),
+                    onMapCreated: (c) {
+                      _mapController = c;
+                      _fitMapBounds(activeRide);
+                    },
+                    zoomControlsEnabled: false,
+                    mapToolbarEnabled: false,
+                    myLocationButtonEnabled: false,
+                    myLocationEnabled: true,
+                  ),
+                ),
+
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                 // Ride info card
                 if (activeRide != null)
                   Container(
@@ -345,6 +425,10 @@ class _MatchingScreenState extends State<MatchingScreen>
                     );
                   }),
                 ],
+              ],
+                    ),
+                  ),
+                ),
               ],
             ),
           );
