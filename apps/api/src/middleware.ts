@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const STATIC_ORIGINS = [
-  "http://localhost:3000",
-  "http://localhost:3001",
-  "http://localhost:4000",
-  "http://localhost:8080",
-  "http://localhost:8081",
-  "http://localhost:54255",
-];
+const PROD_ORIGINS: string[] = [];
+
+// Allow any localhost origin in development (flutter web uses random ports)
+function isLocalhostOrigin(origin: string): boolean {
+  return /^https?:\/\/localhost(:\d+)?$/.test(origin) ||
+    /^https?:\/\/127\.0\.0\.1(:\d+)?$/.test(origin);
+}
 
 function getAllowedOrigins(): string[] {
-  const origins = [...STATIC_ORIGINS];
+  const origins = [...PROD_ORIGINS];
   if (process.env.ADMIN_WEB_URL) {
     origins.push(process.env.ADMIN_WEB_URL.replace(/\/$/, ""));
   }
@@ -22,10 +21,12 @@ function getAllowedOrigins(): string[] {
 
 export function middleware(request: NextRequest) {
   const origin = request.headers.get("origin") || "";
+  const isDev = process.env.NODE_ENV !== "production";
   const isAllowed =
     getAllowedOrigins().includes(origin) ||
     !origin ||
-    process.env.CUSTOMER_APP_URL === "*";
+    process.env.CUSTOMER_APP_URL === "*" ||
+    (isDev && isLocalhostOrigin(origin));
 
   // Handle preflight OPTIONS requests
   if (request.method === "OPTIONS") {
