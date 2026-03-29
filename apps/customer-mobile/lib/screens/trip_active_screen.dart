@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -12,14 +13,22 @@ class TripActiveScreen extends StatefulWidget {
   State<TripActiveScreen> createState() => _TripActiveScreenState();
 }
 
-class _TripActiveScreenState extends State<TripActiveScreen> {
+class _TripActiveScreenState extends State<TripActiveScreen>
+    with SingleTickerProviderStateMixin {
   GoogleMapController? _mapController;
   LatLng? _driverLocation;
   Set<Marker> _markers = {};
+  Timer? _pollTimer;
+  late AnimationController _pulseController;
 
   @override
   void initState() {
     super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat();
+
     SocketService().onDriverLocation((data) {
       final lat = (data['lat'] as num).toDouble();
       final lng = (data['lng'] as num).toDouble();
@@ -39,11 +48,19 @@ class _TripActiveScreenState extends State<TripActiveScreen> {
         _mapController?.animateCamera(CameraUpdate.newLatLng(pos));
       }
     });
+
+    // Poll trip status every 10 seconds
+    _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      Provider.of<RideProvider>(context, listen: false).refreshActiveRide();
+    });
   }
 
   @override
   void dispose() {
+    _pollTimer?.cancel();
+    _pulseController.dispose();
     SocketService().off('trip:driver:location');
+    _mapController?.dispose();
     super.dispose();
   }
 
@@ -54,238 +71,174 @@ class _TripActiveScreenState extends State<TripActiveScreen> {
         builder: (context, ride, _) {
           final trip = ride.activeTrip;
           if (trip == null) {
-            return const Center(child: Text('No active trip'));
+            return const Center(child: CircularProgressIndicator());
           }
 
           final driver = trip['driverProfile'];
           final driverUser = driver?['user'];
           final status = trip['status'] ?? 'DRIVER_ASSIGNED';
+          final vehicles = driver?['vehicles'] as List?;
+          final vehicle = vehicles?.isNotEmpty == true ? vehicles![0] : null;
 
           final pickupLat = (trip['pickupLatitude'] as num?)?.toDouble() ?? 13.7563;
           final pickupLng = (trip['pickupLongitude'] as num?)?.toDouble() ?? 100.5018;
           final dropoffLat = (trip['dropoffLatitude'] as num?)?.toDouble() ?? 13.7563;
           final dropoffLng = (trip['dropoffLongitude'] as num?)?.toDouble() ?? 100.5018;
 
-          return SafeArea(
-            child: Column(
-              children: [
-                // Google Map with real-time driver tracking
-                Expanded(
-                  flex: 3,
-                  child: Stack(
-                    children: [
-                      GoogleMap(
-                        initialCameraPosition: CameraPosition(
-                          target: LatLng(pickupLat, pickupLng),
-                          zoom: 14,
-                        ),
-                        markers: {
-                          Marker(
-                            markerId: const MarkerId('pickup'),
-                            position: LatLng(pickupLat, pickupLng),
-                            infoWindow: const InfoWindow(title: 'Pickup'),
-                            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-                          ),
-                          Marker(
-                            markerId: const MarkerId('dropoff'),
-                            position: LatLng(dropoffLat, dropoffLng),
-                            infoWindow: const InfoWindow(title: 'Dropoff'),
-                            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-                          ),
-                          ..._markers,
-                        },
-                        myLocationEnabled: false,
-                        zoomControlsEnabled: false,
-                        mapToolbarEnabled: false,
-                        onMapCreated: (c) => _mapController = c,
-                      ),
-                      Positioned(
-                        top: 12,
-                        left: 12,
-                        child: GestureDetector(
-                          onTap: () => Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false),
+          // Check if trip completed → navigate to summary
+          if (status == 'COMPLETED') {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                Navigator.pushReplacementNamed(context, '/trip-summary',
+                    arguments: trip);
+              }
+            });
+          }
+
+          return Stack(
+            children: [
+              // ── Full-screen GoogleMap ──
+              GoogleMap(
+                initialCameraPosition: CameraPosition(
+                  target: LatLng(pickupLat, pickupLng),
+                  zoom: 14,
+                ),
+                markers: {
+                  Marker(
+                    markerId: const MarkerId('pickup'),
+                    position: LatLng(pickupLat, pickupLng),
+                    infoWindow: const InfoWindow(title: 'Pickup'),
+                    icon: BitmapDescriptor.defaultMarkerWithHue(
+                        BitmapDescriptor.hueCyan),
+                  ),
+                  Marker(
+                    markerId: const MarkerId('dropoff'),
+                    position: LatLng(dropoffLat, dropoffLng),
+                    infoWindow: const InfoWindow(title: 'Dropoff'),
+                    icon: BitmapDescriptor.defaultMarkerWithHue(
+                        BitmapDescriptor.hueRed),
+                  ),
+                  ..._markers,
+                },
+                myLocationEnabled: false,
+                zoomControlsEnabled: false,
+                mapToolbarEnabled: false,
+                myLocationButtonEnabled: false,
+                onMapCreated: (c) => _mapController = c,
+              ),
+
+              // ── Top status pill ──
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: Row(
+                      children: [
+                        Expanded(
                           child: Container(
-                            width: 40,
-                            height: 40,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 10),
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(10),
-                              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 6)],
+                              borderRadius: BorderRadius.circular(30),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.12),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                             ),
-                            child: const Icon(Icons.arrow_back, size: 20),
+                            child: Row(
+                              children: [
+                                AnimatedBuilder(
+                                  animation: _pulseController,
+                                  builder: (ctx, _) => Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: BoxDecoration(
+                                      color: FairGoTheme.primaryCyan
+                                          .withValues(alpha: _pulseController.value),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    _statusLabel(status),
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: FairGoTheme.textPrimary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Trip info bottom sheet
-                Expanded(
-                  flex: 4,
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                      boxShadow: [
-                        BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, -4)),
+                        const SizedBox(width: 10),
+                        // SOS / Shield button
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: FairGoTheme.danger,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: FairGoTheme.danger.withValues(alpha: 0.3),
+                                blurRadius: 12,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(Icons.shield_rounded,
+                              color: Colors.white, size: 22),
+                        ),
                       ],
                     ),
-                    child: SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                  ),
+                ),
+              ),
+
+              // ── "Driver is nearby!" badge ──
+              if (status == 'DRIVER_ARRIVED')
+                Positioned(
+                  top: 120,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: FairGoTheme.success,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: FairGoTheme.success.withValues(alpha: 0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Status indicator
-                          Center(
-                            child: Container(
-                              width: 40,
-                              height: 4,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE0E0E0),
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          _StatusBanner(status: status),
-                          const SizedBox(height: 16),
-
-                          // Driver info
-                          Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 26,
-                                backgroundColor: FairGoTheme.primaryCyan.withValues(alpha: 0.15),
-                                child: Text(
-                                  (driverUser?['name']?.toString() ?? '?').substring(0, 1),
-                                  style: const TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: FairGoTheme.primaryCyan,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      driverUser?['name']?.toString() ?? 'Driver',
-                                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                                    ),
-                                    Row(
-                                      children: [
-                                        const Icon(Icons.star_rounded, size: 14, color: Color(0xFFF59E0B)),
-                                        const SizedBox(width: 2),
-                                        Text(
-                                          '${driver?['averageRating']?.toStringAsFixed(1) ?? '0.0'}',
-                                          style: const TextStyle(fontSize: 12, color: FairGoTheme.textSecondary),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              // Contact buttons
-                              Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: FairGoTheme.primaryCyan.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: const Icon(Icons.chat_bubble_rounded, color: FairGoTheme.primaryCyan, size: 18),
-                              ),
-                              const SizedBox(width: 8),
-                              Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: FairGoTheme.success.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: const Icon(Icons.phone_rounded, color: FairGoTheme.success, size: 18),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          const Divider(),
-                          const SizedBox(height: 12),
-
-                          // Fare locked
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                'Fare Locked',
-                                style: TextStyle(fontSize: 14, color: FairGoTheme.textSecondary),
-                              ),
-                              Row(
-                                children: [
-                                  const Icon(Icons.lock_rounded, size: 16, color: FairGoTheme.success),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '฿${trip['lockedFare']?.toStringAsFixed(0) ?? '0'}',
-                                    style: const TextStyle(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.bold,
-                                      color: FairGoTheme.primaryCyan,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Route
-                          Row(
-                            children: [
-                              Column(
-                                children: [
-                                  Container(width: 8, height: 8, decoration: const BoxDecoration(color: FairGoTheme.primaryCyan, shape: BoxShape.circle)),
-                                  Container(width: 1.5, height: 24, color: const Color(0xFFE0E0E0)),
-                                  Container(width: 8, height: 8, decoration: const BoxDecoration(color: FairGoTheme.danger, shape: BoxShape.circle)),
-                                ],
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      trip['pickupAddress'] ?? '',
-                                      style: const TextStyle(fontSize: 13),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      trip['dropoffAddress'] ?? '',
-                                      style: const TextStyle(fontSize: 13),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-
-                          // Safety button
-                          OutlinedButton.icon(
-                            onPressed: () {},
-                            icon: const Icon(Icons.shield_rounded, size: 18),
-                            label: const Text('Safety'),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: FairGoTheme.danger,
-                              side: const BorderSide(color: FairGoTheme.danger),
-                              minimumSize: const Size(double.infinity, 44),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          Icon(Icons.check_circle_rounded,
+                              color: Colors.white, size: 16),
+                          SizedBox(width: 6),
+                          Text(
+                            'Driver is nearby!',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
@@ -293,75 +246,213 @@ class _TripActiveScreenState extends State<TripActiveScreen> {
                     ),
                   ),
                 ),
-              ],
-            ),
+
+              // ── Bottom card ──
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius:
+                        BorderRadius.vertical(top: Radius.circular(24)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Color(0x1A000000),
+                        blurRadius: 24,
+                        offset: Offset(0, -4),
+                      ),
+                    ],
+                  ),
+                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Drag handle
+                      Center(
+                        child: Container(
+                          width: 36,
+                          height: 4,
+                          margin: const EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE0E0E0),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+
+                      // Driver info row
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 26,
+                            backgroundColor:
+                                FairGoTheme.primaryCyan.withValues(alpha: 0.15),
+                            child: Text(
+                              (driverUser?['name']?.toString() ?? '?')
+                                  .substring(0, 1),
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: FairGoTheme.primaryCyan,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  driverUser?['name']?.toString() ?? 'Driver',
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.star_rounded,
+                                        size: 13,
+                                        color: Color(0xFFF59E0B)),
+                                    const SizedBox(width: 2),
+                                    Text(
+                                      driver?['averageRating']
+                                              ?.toStringAsFixed(1) ??
+                                          '0.0',
+                                      style: const TextStyle(
+                                          fontSize: 12,
+                                          color: FairGoTheme.textSecondary),
+                                    ),
+                                    if (vehicle != null) ...[
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        vehicle['plateNumber'] ?? '',
+                                        style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                            color: FairGoTheme.textPrimary),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          // Fare
+                          Row(
+                            children: [
+                              const Icon(Icons.lock_rounded,
+                                  size: 14, color: FairGoTheme.success),
+                              const SizedBox(width: 4),
+                              Text(
+                                '฿${trip['lockedFare']?.toStringAsFixed(0) ?? '0'}',
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: FairGoTheme.primaryCyan,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Locked price info box
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: FairGoTheme.success.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.verified_rounded,
+                                size: 14,
+                                color: FairGoTheme.success),
+                            const SizedBox(width: 6),
+                            const Text(
+                              'ล็อกราคาแล้ว สบายใจได้',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: FairGoTheme.success,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+
+                      // Chat + Call buttons
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () {},
+                              icon: const Icon(Icons.chat_bubble_rounded,
+                                  size: 16),
+                              label: const Text('Chat'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: FairGoTheme.primaryCyan,
+                                side: BorderSide(
+                                    color: FairGoTheme.primaryCyan
+                                        .withValues(alpha: 0.4)),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () {},
+                              icon: const Icon(Icons.phone_rounded, size: 16),
+                              label: const Text('Call Driver'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: FairGoTheme.primaryCyan,
+                                foregroundColor: Colors.white,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
+                                elevation: 0,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           );
         },
       ),
     );
   }
-}
 
-class _StatusBanner extends StatelessWidget {
-  final String status;
-
-  const _StatusBanner({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    final statusInfo = _getStatusInfo(status);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: statusInfo.color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        children: [
-          Icon(statusInfo.icon, color: statusInfo.color, size: 18),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              statusInfo.label,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: statusInfo.color,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  _StatusInfo _getStatusInfo(String status) {
+  String _statusLabel(String status) {
     switch (status) {
       case 'DRIVER_ASSIGNED':
-        return _StatusInfo('Driver assigned', Icons.person_rounded, FairGoTheme.primaryCyan);
+        return 'Driver assigned · Arriving soon';
       case 'DRIVER_EN_ROUTE':
-        return _StatusInfo('Driver is on the way', Icons.directions_car_rounded, FairGoTheme.primaryCyan);
+        return 'Arriving in ~5 mins';
       case 'DRIVER_ARRIVED':
-        return _StatusInfo('Driver has arrived', Icons.place_rounded, FairGoTheme.success);
+        return 'Driver has arrived!';
       case 'PICKUP_CONFIRMED':
-        return _StatusInfo('Pickup confirmed', Icons.check_circle_rounded, FairGoTheme.success);
+        return 'Trip started';
       case 'IN_PROGRESS':
-        return _StatusInfo('Trip in progress', Icons.navigation_rounded, FairGoTheme.primaryCyan);
-      case 'COMPLETED':
-        return _StatusInfo('Trip completed', Icons.check_circle_rounded, FairGoTheme.success);
-      case 'CANCELLED':
-        return _StatusInfo('Trip cancelled', Icons.cancel_rounded, FairGoTheme.danger);
+        return 'On the way to destination';
       default:
-        return _StatusInfo(status, Icons.info_rounded, FairGoTheme.textSecondary);
+        return status.replaceAll('_', ' ');
     }
   }
-}
-
-class _StatusInfo {
-  final String label;
-  final IconData icon;
-  final Color color;
-
-  _StatusInfo(this.label, this.icon, this.color);
 }

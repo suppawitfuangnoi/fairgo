@@ -21,7 +21,6 @@ class _RideRequestScreenState extends State<RideRequestScreen> {
   static const double _minFare = 80;
   static const double _maxFare = 250;
 
-  // Coordinates — pickup from real GPS, dropoff default Bangkok landmark
   double _pickupLat = 13.7563;
   double _pickupLng = 100.5018;
   double _dropoffLat = 13.7262;
@@ -35,9 +34,7 @@ class _RideRequestScreenState extends State<RideRequestScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final args = ModalRoute.of(context)?.settings.arguments;
-      if (args is String) {
-        setState(() => _vehicleType = args);
-      }
+      if (args is String) setState(() => _vehicleType = args);
       _initLocation();
     });
   }
@@ -51,7 +48,7 @@ class _RideRequestScreenState extends State<RideRequestScreen> {
   }
 
   Future<void> _initLocation() async {
-    final pos = await LocationService().getCurrentPosition();
+    final pos = await LocationService.instance.getCurrentLocation();
     if (pos != null && mounted) {
       setState(() {
         _pickupLat = pos.latitude;
@@ -63,7 +60,6 @@ class _RideRequestScreenState extends State<RideRequestScreen> {
       _animateMap();
       await _loadFareEstimate();
     } else if (mounted) {
-      // Fallback: Siam Paragon
       setState(() {
         _pickupLat = 13.7469;
         _pickupLng = 100.5392;
@@ -82,26 +78,27 @@ class _RideRequestScreenState extends State<RideRequestScreen> {
     final neLng = _pickupLng > _dropoffLng ? _pickupLng + 0.005 : _dropoffLng + 0.005;
     _mapController?.animateCamera(
       CameraUpdate.newLatLngBounds(
-        LatLngBounds(southwest: LatLng(swLat, swLng), northeast: LatLng(neLat, neLng)),
+        LatLngBounds(
+            southwest: LatLng(swLat, swLng), northeast: LatLng(neLat, neLng)),
         60,
       ),
     );
   }
 
   Set<Marker> get _markers => {
-    Marker(
-      markerId: const MarkerId('pickup'),
-      position: LatLng(_pickupLat, _pickupLng),
-      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueCyan),
-      infoWindow: const InfoWindow(title: 'Pickup'),
-    ),
-    Marker(
-      markerId: const MarkerId('dropoff'),
-      position: LatLng(_dropoffLat, _dropoffLng),
-      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-      infoWindow: const InfoWindow(title: 'Drop-off'),
-    ),
-  };
+        Marker(
+          markerId: const MarkerId('pickup'),
+          position: LatLng(_pickupLat, _pickupLng),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueCyan),
+          infoWindow: const InfoWindow(title: 'Pickup'),
+        ),
+        Marker(
+          markerId: const MarkerId('dropoff'),
+          position: LatLng(_dropoffLat, _dropoffLng),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+          infoWindow: const InfoWindow(title: 'Drop-off'),
+        ),
+      };
 
   Future<void> _loadFareEstimate() async {
     final ride = Provider.of<RideProvider>(context, listen: false);
@@ -129,8 +126,10 @@ class _RideRequestScreenState extends State<RideRequestScreen> {
   Future<void> _submitRequest() async {
     final ride = Provider.of<RideProvider>(context, listen: false);
     final estimate = ride.fareEstimate;
-    final fareMin = estimate != null ? (estimate['fareMin'] as num).toDouble() : _minFare;
-    final fareMax = estimate != null ? (estimate['fareMax'] as num).toDouble() : _maxFare;
+    final fareMin =
+        estimate != null ? (estimate['fareMin'] as num).toDouble() : _minFare;
+    final fareMax =
+        estimate != null ? (estimate['fareMax'] as num).toDouble() : _maxFare;
 
     final success = await ride.createRideRequest(
       vehicleType: _vehicleType,
@@ -153,230 +152,535 @@ class _RideRequestScreenState extends State<RideRequestScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Request a Ride'),
-        backgroundColor: FairGoTheme.primaryCyan,
-      ),
       body: Consumer<RideProvider>(
         builder: (context, ride, _) {
           final estimate = ride.fareEstimate;
-          return SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ==================== GOOGLE MAP ====================
-                SizedBox(
-                  height: 220,
-                  child: Stack(
-                    children: [
-                      GoogleMap(
-                        initialCameraPosition: CameraPosition(
-                          target: LatLng(_pickupLat, _pickupLng),
-                          zoom: 13,
-                        ),
-                        markers: _markers,
-                        onMapCreated: (c) {
-                          _mapController = c;
-                          if (!_loadingLocation) _animateMap();
-                        },
-                        myLocationEnabled: true,
-                        myLocationButtonEnabled: false,
-                        zoomControlsEnabled: false,
-                        mapToolbarEnabled: false,
-                        onTap: (latLng) {
-                          setState(() {
-                            _dropoffLat = latLng.latitude;
-                            _dropoffLng = latLng.longitude;
-                            _dropoffController.text =
-                                '${latLng.latitude.toStringAsFixed(4)}, ${latLng.longitude.toStringAsFixed(4)}';
-                          });
-                          _animateMap();
-                          _loadFareEstimate();
-                        },
-                      ),
-                      if (_loadingLocation)
-                        const Center(child: CircularProgressIndicator(color: FairGoTheme.primaryCyan)),
-                      Positioned(
-                        top: 10,
-                        left: 10,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Text(
-                            'Tap map to set drop-off',
-                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: FairGoTheme.textSecondary),
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        bottom: 10,
-                        right: 10,
-                        child: GestureDetector(
-                          onTap: _initLocation,
+          final recommended =
+              estimate != null ? (estimate['recommendedFare'] as num).toDouble() : _fareOffer;
+          final fareMin = estimate != null
+              ? (estimate['fareMin'] as num).toDouble()
+              : _minFare;
+          final fareMax = estimate != null
+              ? (estimate['fareMax'] as num).toDouble()
+              : _maxFare;
+          final isFair = _fareOffer >= recommended - 10;
+
+          return Stack(
+            children: [
+              // ── Full-screen GoogleMap ──
+              Positioned.fill(
+                child: GoogleMap(
+                  initialCameraPosition: CameraPosition(
+                    target: LatLng(_pickupLat, _pickupLng),
+                    zoom: 13,
+                  ),
+                  markers: _markers,
+                  onMapCreated: (c) {
+                    _mapController = c;
+                    if (!_loadingLocation) _animateMap();
+                  },
+                  myLocationEnabled: true,
+                  myLocationButtonEnabled: false,
+                  zoomControlsEnabled: false,
+                  mapToolbarEnabled: false,
+                  onTap: (latLng) {
+                    setState(() {
+                      _dropoffLat = latLng.latitude;
+                      _dropoffLng = latLng.longitude;
+                      _dropoffController.text =
+                          '${latLng.latitude.toStringAsFixed(4)}, ${latLng.longitude.toStringAsFixed(4)}';
+                    });
+                    _animateMap();
+                    _loadFareEstimate();
+                  },
+                ),
+              ),
+              if (_loadingLocation)
+                const Center(
+                    child: CircularProgressIndicator(
+                        color: FairGoTheme.primaryCyan)),
+
+              // ── Top bar ──
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context),
                           child: Container(
-                            width: 38,
-                            height: 38,
+                            width: 44,
+                            height: 44,
                             decoration: BoxDecoration(
                               color: Colors.white,
                               shape: BoxShape.circle,
-                              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 6)],
-                            ),
-                            child: const Icon(Icons.my_location_rounded, color: FairGoTheme.primaryCyan, size: 20),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Route display
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFF0F0F0)),
-                        ),
-                        child: Row(
-                          children: [
-                            Column(
-                              children: [
-                                Container(width: 10, height: 10, decoration: const BoxDecoration(color: FairGoTheme.primaryCyan, shape: BoxShape.circle)),
-                                Container(width: 2, height: 30, color: const Color(0xFFE0E0E0)),
-                                Container(width: 10, height: 10, decoration: const BoxDecoration(color: FairGoTheme.danger, shape: BoxShape.circle)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.12),
+                                  blurRadius: 10,
+                                ),
                               ],
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(_pickupController.text, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500), maxLines: 1, overflow: TextOverflow.ellipsis),
-                                  const Divider(height: 16),
-                                  Text(_dropoffController.text, style: const TextStyle(fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
-                                ],
+                            child: const Icon(Icons.arrow_back_rounded,
+                                color: FairGoTheme.textPrimary, size: 20),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                  blurRadius: 10,
+                                ),
+                              ],
+                            ),
+                            child: const Text(
+                              'Set Your Fare',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: FairGoTheme.textPrimary,
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Vehicle type selector
-                      const Text('Vehicle Type', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: FairGoTheme.textPrimary)),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          _VehicleOption(icon: Icons.local_taxi_rounded, label: 'Taxi', isSelected: _vehicleType == 'TAXI', onTap: () { setState(() => _vehicleType = 'TAXI'); _loadFareEstimate(); }),
-                          const SizedBox(width: 10),
-                          _VehicleOption(icon: Icons.two_wheeler_rounded, label: 'Motorcycle', isSelected: _vehicleType == 'MOTORCYCLE', onTap: () { setState(() => _vehicleType = 'MOTORCYCLE'); _loadFareEstimate(); }),
-                          const SizedBox(width: 10),
-                          _VehicleOption(icon: Icons.electric_rickshaw_rounded, label: 'Tuk-Tuk', isSelected: _vehicleType == 'TUKTUK', onTap: () { setState(() => _vehicleType = 'TUKTUK'); _loadFareEstimate(); }),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Fare estimate card
-                      if (ride.isLoading && !_estimateLoaded)
-                        const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator(color: FairGoTheme.primaryCyan)))
-                      else if (estimate != null) ...[
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: FairGoTheme.primaryCyan.withValues(alpha: 0.3)),
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text('Fare Estimate', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: FairGoTheme.textPrimary)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // ── Map hint ──
+              Positioned(
+                top: 120,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Text(
+                      'Tap map to set drop-off location',
+                      style: TextStyle(
+                          fontSize: 11, color: FairGoTheme.textSecondary),
+                    ),
+                  ),
+                ),
+              ),
+
+              // ── My Location button ──
+              Positioned(
+                right: 16,
+                bottom: _estimateLoaded ? 420 : 300,
+                child: GestureDetector(
+                  onTap: _initLocation,
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.15),
+                          blurRadius: 10,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(Icons.my_location_rounded,
+                        color: FairGoTheme.primaryCyan, size: 22),
+                  ),
+                ),
+              ),
+
+              // ── Bottom Sheet ──
+              DraggableScrollableSheet(
+                initialChildSize: 0.52,
+                minChildSize: 0.22,
+                maxChildSize: 0.88,
+                builder: (context, scrollController) {
+                  return Container(
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius:
+                          BorderRadius.vertical(top: Radius.circular(24)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Color(0x1A000000),
+                          blurRadius: 24,
+                          offset: Offset(0, -4),
+                        ),
+                      ],
+                    ),
+                    child: SingleChildScrollView(
+                      controller: scrollController,
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Drag handle
+                          Center(
+                            child: Container(
+                              margin:
+                                  const EdgeInsets.only(top: 10, bottom: 16),
+                              width: 36,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE0E0E0),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                          ),
+
+                          // Route summary card
+                          Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8F9FA),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                  color: const Color(0xFFF0F0F0)),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 20,
+                                  child: Column(
+                                    children: [
+                                      const Icon(Icons.circle,
+                                          size: 10,
+                                          color: FairGoTheme.primaryCyan),
+                                      Container(
+                                          width: 2,
+                                          height: 20,
+                                          color: const Color(0xFFE0E0E0)),
+                                      const Icon(Icons.location_on_rounded,
+                                          size: 14,
+                                          color: FairGoTheme.danger),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        _pickupController.text.isEmpty
+                                            ? 'Current location'
+                                            : _pickupController.text,
+                                        style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        _dropoffController.text,
+                                        style: const TextStyle(
+                                            fontSize: 12,
+                                            color: FairGoTheme.textSecondary),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (estimate != null)
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                    decoration: BoxDecoration(color: FairGoTheme.primaryCyan.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                                    child: Text(
-                                      '${(estimate['estimatedDistance'] as num?)?.toStringAsFixed(1) ?? '0'} km · ${estimate['estimatedDuration'] ?? 0} min',
-                                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: FairGoTheme.primaryCyan),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: FairGoTheme.primaryCyan
+                                          .withValues(alpha: 0.1),
+                                      borderRadius:
+                                          BorderRadius.circular(8),
                                     ),
+                                    child: Text(
+                                      '${(estimate['estimatedDistance'] as num?)?.toStringAsFixed(1) ?? '0'} km',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: FairGoTheme.primaryCyan,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Vehicle type selector
+                          Row(
+                            children: [
+                              _VehicleOption(
+                                icon: Icons.local_taxi_rounded,
+                                label: 'Taxi',
+                                isSelected: _vehicleType == 'TAXI',
+                                onTap: () {
+                                  setState(() => _vehicleType = 'TAXI');
+                                  _loadFareEstimate();
+                                },
+                              ),
+                              const SizedBox(width: 8),
+                              _VehicleOption(
+                                icon: Icons.two_wheeler_rounded,
+                                label: 'Moto',
+                                isSelected: _vehicleType == 'MOTORCYCLE',
+                                onTap: () {
+                                  setState(
+                                      () => _vehicleType = 'MOTORCYCLE');
+                                  _loadFareEstimate();
+                                },
+                              ),
+                              const SizedBox(width: 8),
+                              _VehicleOption(
+                                icon: Icons.electric_rickshaw_rounded,
+                                label: 'Tuk-Tuk',
+                                isSelected: _vehicleType == 'TUKTUK',
+                                onTap: () {
+                                  setState(() => _vehicleType = 'TUKTUK');
+                                  _loadFareEstimate();
+                                },
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+
+                          if (ride.isLoading && !_estimateLoaded)
+                            const Center(
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(vertical: 30),
+                                child: CircularProgressIndicator(
+                                    color: FairGoTheme.primaryCyan),
+                              ),
+                            )
+                          else ...[
+                            // Big fare display
+                            Center(
+                              child: Text(
+                                '฿${_fareOffer.toStringAsFixed(0)}',
+                                style: const TextStyle(
+                                  fontSize: 52,
+                                  fontWeight: FontWeight.w900,
+                                  color: FairGoTheme.primaryCyan,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+
+                            // Fairness badge
+                            Center(
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 300),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: isFair
+                                      ? FairGoTheme.success
+                                          .withValues(alpha: 0.1)
+                                      : FairGoTheme.warning
+                                          .withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      isFair
+                                          ? Icons.check_circle_rounded
+                                          : Icons.info_rounded,
+                                      size: 14,
+                                      color: isFair
+                                          ? FairGoTheme.success
+                                          : FairGoTheme.warning,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      isFair
+                                          ? 'ราคานี้แฟร์สำหรับคุณและคนขับ'
+                                          : 'ลองเพิ่มราคาเพื่อหาคนขับเร็วขึ้น',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: isFair
+                                            ? FairGoTheme.success
+                                            : FairGoTheme.warning,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Slider
+                            Slider(
+                              value: _fareOffer.clamp(fareMin, fareMax),
+                              min: fareMin,
+                              max: fareMax,
+                              activeColor: FairGoTheme.primaryCyan,
+                              inactiveColor: FairGoTheme.primaryCyan
+                                  .withValues(alpha: 0.15),
+                              onChanged: (v) =>
+                                  setState(() => _fareOffer = v),
+                            ),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 4),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    '฿${fareMin.toStringAsFixed(0)}',
+                                    style: const TextStyle(
+                                        fontSize: 11,
+                                        color: FairGoTheme.textSecondary),
+                                  ),
+                                  Text(
+                                    'Recommended ฿${recommended.toStringAsFixed(0)}',
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: FairGoTheme.primaryCyan,
+                                    ),
+                                  ),
+                                  Text(
+                                    '฿${fareMax.toStringAsFixed(0)}',
+                                    style: const TextStyle(
+                                        fontSize: 11,
+                                        color: FairGoTheme.textSecondary),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 16),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  _FareItem(label: 'Min', value: '฿${estimate['fareMin']}'),
-                                  _FareItem(label: 'Recommended', value: '฿${estimate['recommendedFare']}', isHighlighted: true),
-                                  _FareItem(label: 'Max', value: '฿${estimate['fareMax']}'),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 20),
+                            ),
+                            const SizedBox(height: 16),
 
-                        const Text('Your Fare Offer', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: FairGoTheme.textPrimary)),
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: const Color(0xFFF0F0F0)),
-                          ),
-                          child: Column(
-                            children: [
-                              Text('฿${_fareOffer.toStringAsFixed(0)}', style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: FairGoTheme.primaryCyan)),
-                              const SizedBox(height: 12),
-                              Slider(
-                                value: _fareOffer,
-                                min: _minFare,
-                                max: _maxFare,
-                                activeColor: FairGoTheme.primaryCyan,
-                                inactiveColor: FairGoTheme.primaryCyan.withValues(alpha: 0.2),
-                                onChanged: (value) => setState(() => _fareOffer = value),
-                              ),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text('฿${_minFare.toStringAsFixed(0)}', style: const TextStyle(fontSize: 12, color: FairGoTheme.textSecondary)),
-                                  Text('฿${_maxFare.toStringAsFixed(0)}', style: const TextStyle(fontSize: 12, color: FairGoTheme.textSecondary)),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 24),
+                            // Quick adjust buttons
+                            Row(
+                              children: [
+                                const Text(
+                                  'Quick adjust: ',
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      color: FairGoTheme.textSecondary),
+                                ),
+                                const SizedBox(width: 4),
+                                ...[-10, +10, +20, +50].map((delta) {
+                                  return Padding(
+                                    padding:
+                                        const EdgeInsets.only(right: 6),
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          _fareOffer =
+                                              (_fareOffer + delta).clamp(
+                                                  fareMin, fareMax);
+                                        });
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 10, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: delta > 0
+                                              ? FairGoTheme.primaryCyan
+                                                  .withValues(alpha: 0.1)
+                                              : FairGoTheme.danger
+                                                  .withValues(alpha: 0.08),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        child: Text(
+                                          '${delta > 0 ? '+' : ''}$delta',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            color: delta > 0
+                                                ? FairGoTheme.primaryCyan
+                                                : FairGoTheme.danger,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }),
+                              ],
+                            ),
+                            const SizedBox(height: 24),
 
-                        ElevatedButton(
-                          onPressed: ride.isLoading ? null : _submitRequest,
-                          child: ride.isLoading
-                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                              : Text('Request Ride · ฿${_fareOffer.toStringAsFixed(0)}'),
-                        ),
-                      ],
+                            // Error
+                            if (ride.error != null)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: Text(
+                                  ride.error!,
+                                  style: const TextStyle(
+                                      color: FairGoTheme.danger,
+                                      fontSize: 13),
+                                ),
+                              ),
 
-                      if (ride.error != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 12),
-                          child: Text(ride.error!, style: const TextStyle(color: FairGoTheme.danger, fontSize: 13)),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+                            // CTA
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: ride.isLoading
+                                    ? null
+                                    : _submitRequest,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: FairGoTheme.primaryCyan,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius:
+                                          BorderRadius.circular(16)),
+                                  elevation: 0,
+                                ),
+                                child: ride.isLoading
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white),
+                                      )
+                                    : Text(
+                                        'เรียกแฟร์โก · ฿${_fareOffer.toStringAsFixed(0)}',
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                            const SizedBox(height: 28),
+                          ],
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
           );
         },
       ),
@@ -390,7 +694,12 @@ class _VehicleOption extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
 
-  const _VehicleOption({required this.icon, required this.label, required this.isSelected, required this.onTap});
+  const _VehicleOption({
+    required this.icon,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -402,36 +711,31 @@ class _VehicleOption extends StatelessWidget {
           decoration: BoxDecoration(
             color: isSelected ? FairGoTheme.primaryCyan : Colors.white,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: isSelected ? FairGoTheme.primaryCyan : const Color(0xFFE5E7EB), width: isSelected ? 2 : 1),
+            border: Border.all(
+              color:
+                  isSelected ? FairGoTheme.primaryCyan : const Color(0xFFE5E7EB),
+              width: isSelected ? 2 : 1,
+            ),
           ),
           child: Column(
             children: [
-              Icon(icon, color: isSelected ? Colors.white : FairGoTheme.textSecondary, size: 24),
+              Icon(icon,
+                  color:
+                      isSelected ? Colors.white : FairGoTheme.textSecondary,
+                  size: 22),
               const SizedBox(height: 4),
-              Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: isSelected ? Colors.white : FairGoTheme.textSecondary)),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: isSelected ? Colors.white : FairGoTheme.textSecondary,
+                ),
+              ),
             ],
           ),
         ),
       ),
-    );
-  }
-}
-
-class _FareItem extends StatelessWidget {
-  final String label;
-  final String value;
-  final bool isHighlighted;
-
-  const _FareItem({required this.label, required this.value, this.isHighlighted = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(label, style: TextStyle(fontSize: 11, color: isHighlighted ? FairGoTheme.primaryCyan : FairGoTheme.textSecondary, fontWeight: FontWeight.w500)),
-        const SizedBox(height: 2),
-        Text(value, style: TextStyle(fontSize: isHighlighted ? 20 : 16, fontWeight: FontWeight.bold, color: isHighlighted ? FairGoTheme.primaryCyan : FairGoTheme.textPrimary)),
-      ],
     );
   }
 }

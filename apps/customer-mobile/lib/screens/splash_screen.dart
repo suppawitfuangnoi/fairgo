@@ -14,23 +14,33 @@ class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
+  late Animation<double> _scaleAnimation;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1800),
     );
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+      ),
+    );
+    _scaleAnimation = Tween<double>(begin: 0.7, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.6, curve: Curves.elasticOut),
+      ),
     );
     _controller.forward();
     _initApp();
   }
 
   Future<void> _initApp() async {
-    await Future.delayed(const Duration(seconds: 2));
+    await Future.delayed(const Duration(milliseconds: 2500));
     if (!mounted) return;
 
     final auth = Provider.of<AuthProvider>(context, listen: false);
@@ -55,63 +65,77 @@ class _SplashScreenState extends State<SplashScreen>
     return Scaffold(
       body: Container(
         width: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [FairGoTheme.primaryCyan, FairGoTheme.primaryDark],
-          ),
-        ),
+        height: double.infinity,
+        color: FairGoTheme.primaryCyan,
         child: FadeTransition(
           opacity: _fadeAnimation,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.2),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.directions_car_rounded,
-                  size: 52,
-                  color: FairGoTheme.primaryCyan,
+              // Logo - F with road dashes
+              ScaleTransition(
+                scale: _scaleAnimation,
+                child: Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: _FLogoWidget(),
+                  ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
+              // FAIRGO Title
               const Text(
                 'FAIRGO',
                 style: TextStyle(
-                  fontSize: 36,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 40,
+                  fontWeight: FontWeight.w900,
                   color: Colors.white,
-                  letterSpacing: 4,
+                  letterSpacing: 6,
                 ),
               ),
               const SizedBox(height: 8),
+              // English tagline
               Text(
-                'เดินทางอย่างเป็นธรรม',
+                'Ride Your Way',
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.white.withValues(alpha: 0.85),
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white.withValues(alpha: 0.9),
+                  letterSpacing: 2,
                 ),
               ),
-              const SizedBox(height: 48),
-              const SizedBox(
-                width: 24,
-                height: 24,
+              const SizedBox(height: 4),
+              // Thai tagline
+              Text(
+                'ราคาที่คุณพอใจ เพื่อนร่วมทางที่ไว้ใจได้',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.white.withValues(alpha: 0.75),
+                ),
+              ),
+              const SizedBox(height: 60),
+              // Loading indicator
+              SizedBox(
+                width: 28,
+                height: 28,
                 child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    Colors.white.withValues(alpha: 0.8),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'v1.0.0',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.white.withValues(alpha: 0.5),
                 ),
               ),
             ],
@@ -120,4 +144,64 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
   }
+}
+
+class _FLogoWidget extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: const Size(64, 64),
+      painter: _FLogoPainter(),
+    );
+  }
+}
+
+class _FLogoPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white
+      ..strokeWidth = 7
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+
+    // F letter
+    // Vertical stroke
+    canvas.drawLine(
+      Offset(size.width * 0.25, size.height * 0.15),
+      Offset(size.width * 0.25, size.height * 0.85),
+      paint,
+    );
+    // Top horizontal
+    canvas.drawLine(
+      Offset(size.width * 0.25, size.height * 0.15),
+      Offset(size.width * 0.75, size.height * 0.15),
+      paint,
+    );
+    // Middle horizontal
+    canvas.drawLine(
+      Offset(size.width * 0.25, size.height * 0.5),
+      Offset(size.width * 0.65, size.height * 0.5),
+      paint,
+    );
+
+    // Road dashes below F
+    final dashPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.5)
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+
+    // Dashes
+    for (int i = 0; i < 3; i++) {
+      canvas.drawLine(
+        Offset(size.width * 0.3 + i * 12, size.height * 0.92),
+        Offset(size.width * 0.3 + i * 12 + 6, size.height * 0.92),
+        dashPaint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

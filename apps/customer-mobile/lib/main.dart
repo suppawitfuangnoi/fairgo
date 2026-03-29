@@ -4,12 +4,15 @@ import 'config/theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/ride_provider.dart';
 import 'screens/splash_screen.dart';
+import 'screens/onboarding_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/otp_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/ride_request_screen.dart';
 import 'screens/matching_screen.dart';
 import 'screens/trip_active_screen.dart';
+import 'screens/trip_summary_screen.dart';
+import 'screens/rating_screen.dart';
 
 void main() {
   runApp(const FairGoCustomerApp());
@@ -32,12 +35,15 @@ class FairGoCustomerApp extends StatelessWidget {
         initialRoute: '/',
         routes: {
           '/': (context) => const SplashScreen(),
+          '/onboarding': (context) => const OnboardingScreen(),
           '/login': (context) => const LoginScreen(),
           '/otp': (context) => const OtpScreen(),
           '/home': (context) => const HomeScreen(),
           '/ride-request': (context) => const RideRequestScreen(),
           '/matching': (context) => const MatchingScreen(),
           '/trip-active': (context) => const TripActiveScreen(),
+          '/trip-summary': (context) => const TripSummaryScreen(),
+          '/rate-driver': (context) => const RatingScreen(),
         },
       ),
     );

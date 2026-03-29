@@ -181,6 +181,22 @@ class RideProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> submitRating({
+    required String tripId,
+    required int rating,
+    String? comment,
+  }) async {
+    try {
+      await _api.post('/api/v1/rides/$tripId/rate', {
+        'rating': rating,
+        if (comment != null && comment.isNotEmpty) 'comment': comment,
+      });
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+
   void reset() {
     _socket.off('offer:new');
     _fareEstimate = null;
