@@ -32,7 +32,7 @@ export default function LoginPage() {
         body: { email, password },
       });
 
-      setAuth(res.data.accessToken, res.data.user);
+      setAuth(res.data.accessToken, res.data.user, res.data.refreshToken);
       router.push("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
