@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
+import '../services/socket_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final ApiService _api = ApiService();
@@ -27,6 +28,9 @@ class AuthProvider extends ChangeNotifier {
           notifyListeners();
         }
         await fetchProfile();
+        if (_api.accessToken != null) {
+          SocketService().connect(_api.accessToken!);
+        }
       } catch (_) {
         _isLoggedIn = false;
         notifyListeners();
@@ -63,6 +67,10 @@ class AuthProvider extends ChangeNotifier {
       await prefs.setString('driver_user_data', jsonEncode(_user));
       _isLoading = false;
       notifyListeners();
+      // Connect socket after login
+      if (_api.accessToken != null) {
+        SocketService().connect(_api.accessToken!);
+      }
       return true;
     } catch (e) {
       _error = e.toString();
@@ -94,6 +102,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    SocketService().disconnect();
     await _api.logout();
     _isLoggedIn = false;
     _user = null;

@@ -5,6 +5,7 @@ import { successResponse, errorResponse } from "@/lib/api-response";
 import { validateBody } from "@/middleware/validate";
 import { createRideRequestSchema } from "@/lib/validation";
 import { JwtPayload } from "@/lib/jwt";
+import { emitToRoom } from "@/lib/socket";
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,6 +42,11 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+
+    // Broadcast to nearby drivers (zone-based) + all online drivers room
+    const zone = `zone:${Math.floor(rideRequest.pickupLatitude * 10)}:${Math.floor(rideRequest.pickupLongitude * 10)}`;
+    emitToRoom(zone, "ride:new_request", rideRequest);
+    emitToRoom("admin:monitor", "ride:new_request", rideRequest);
 
     return successResponse(rideRequest, "Ride request created", 201);
   } catch (error) {
