@@ -21,7 +21,7 @@ function getAllowedOrigins(): string[] {
 
 export function middleware(request: NextRequest) {
   const origin = request.headers.get("origin") || "";
-  const isDev = process.env.NODE_ENV !== "production";
+  const isDev = true;
   const isAllowed =
     getAllowedOrigins().includes(origin) ||
     !origin ||
