@@ -51,15 +51,15 @@ class _HomeScreenState extends State<HomeScreen> {
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.home_rounded),
-              label: 'Home',
+              label: 'หน้าหลัก',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.receipt_long_rounded),
-              label: 'Trips',
+              label: 'การเดินทาง',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person_rounded),
-              label: 'Profile',
+              label: 'โปรไฟล์',
             ),
           ],
         ),
@@ -304,7 +304,7 @@ class _HomeTabState extends State<_HomeTab> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'Plan your ride',
+                            'วางแผนการเดินทาง',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -360,7 +360,7 @@ class _HomeTabState extends State<_HomeTab> {
                                               border: Border.all(color: const Color(0xFFE8E8E8)),
                                             ),
                                             child: const Text(
-                                              'Current location',
+                                              'ตำแหน่งของฉัน',
                                               style: TextStyle(fontSize: 13, color: FairGoTheme.textSecondary),
                                             ),
                                           ),
@@ -376,7 +376,7 @@ class _HomeTabState extends State<_HomeTab> {
                                               border: Border.all(color: const Color(0xFFE8E8E8)),
                                             ),
                                             child: const Text(
-                                              'Where to?',
+                                              'จะไปที่ไหน?',
                                               style: TextStyle(fontSize: 13, color: Color(0xFFBDBDBD)),
                                             ),
                                           ),
@@ -395,19 +395,19 @@ class _HomeTabState extends State<_HomeTab> {
                             children: [
                               _ShortcutChip(
                                 icon: Icons.home_rounded,
-                                label: 'Home',
+                                label: 'บ้าน',
                                 onTap: () => Navigator.pushNamed(context, '/ride-request'),
                               ),
                               const SizedBox(width: 10),
                               _ShortcutChip(
                                 icon: Icons.work_rounded,
-                                label: 'Work',
+                                label: 'ที่ทำงาน',
                                 onTap: () => Navigator.pushNamed(context, '/ride-request'),
                               ),
                               const SizedBox(width: 10),
                               _ShortcutChip(
                                 icon: Icons.history_rounded,
-                                label: 'History',
+                                label: 'ประวัติ',
                                 onTap: () => Navigator.pushNamed(context, '/ride-request'),
                               ),
                             ],
@@ -416,7 +416,7 @@ class _HomeTabState extends State<_HomeTab> {
 
                           // Vehicle type quick launch
                           const Text(
-                            'Choose Vehicle',
+                            'เลือกประเภทรถ',
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
@@ -428,8 +428,8 @@ class _HomeTabState extends State<_HomeTab> {
                             children: [
                               _VehicleCard(
                                 icon: Icons.local_taxi_rounded,
-                                label: 'Taxi',
-                                price: 'From ฿35',
+                                label: 'แท็กซี่',
+                                price: 'เริ่ม ฿35',
                                 bgColor: const Color(0xFFFFF8E1),
                                 iconColor: const Color(0xFFF57C00),
                                 onTap: () => Navigator.pushNamed(context, '/ride-request', arguments: 'TAXI'),
@@ -437,8 +437,8 @@ class _HomeTabState extends State<_HomeTab> {
                               const SizedBox(width: 10),
                               _VehicleCard(
                                 icon: Icons.two_wheeler_rounded,
-                                label: 'Moto',
-                                price: 'From ฿25',
+                                label: 'มอเตอร์ไซค์',
+                                price: 'เริ่ม ฿25',
                                 bgColor: const Color(0xFFE3F2FD),
                                 iconColor: const Color(0xFF1565C0),
                                 onTap: () => Navigator.pushNamed(context, '/ride-request', arguments: 'MOTORCYCLE'),
@@ -446,8 +446,8 @@ class _HomeTabState extends State<_HomeTab> {
                               const SizedBox(width: 10),
                               _VehicleCard(
                                 icon: Icons.electric_rickshaw_rounded,
-                                label: 'Tuk-Tuk',
-                                price: 'From ฿40',
+                                label: 'ตุ๊กตุ๊ก',
+                                price: 'เริ่ม ฿40',
                                 bgColor: const Color(0xFFFCE4EC),
                                 iconColor: const Color(0xFFC62828),
                                 onTap: () => Navigator.pushNamed(context, '/ride-request', arguments: 'TUKTUK'),
@@ -628,7 +628,7 @@ class _TripsTabState extends State<_TripsTab> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Trip History',
+              'ประวัติการเดินทาง',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -647,7 +647,7 @@ class _TripsTabState extends State<_TripsTab> {
                           Icon(Icons.receipt_long_rounded, size: 64, color: Colors.grey[300]),
                           const SizedBox(height: 16),
                           const Text(
-                            'No trips yet',
+                            'ยังไม่มีการเดินทาง',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -656,7 +656,7 @@ class _TripsTabState extends State<_TripsTab> {
                           ),
                           const SizedBox(height: 4),
                           const Text(
-                            'Your trip history will appear here',
+                            'ประวัติการเดินทางของคุณจะปรากฏที่นี่',
                             style: TextStyle(fontSize: 13, color: Color(0xFFBDBDBD)),
                           ),
                         ],
@@ -790,16 +790,16 @@ class _ProfileTab extends StatelessWidget {
                   style: const TextStyle(fontSize: 14, color: FairGoTheme.textSecondary),
                 ),
                 const SizedBox(height: 32),
-                _ProfileMenuItem(icon: Icons.person_outline_rounded, label: 'Edit Profile', onTap: () {}),
-                _ProfileMenuItem(icon: Icons.account_balance_wallet_outlined, label: 'Wallet', onTap: () {}),
-                _ProfileMenuItem(icon: Icons.bookmark_border_rounded, label: 'Saved Places', onTap: () {}),
-                _ProfileMenuItem(icon: Icons.local_offer_outlined, label: 'Promotions', onTap: () {}),
-                _ProfileMenuItem(icon: Icons.headset_mic_outlined, label: 'Support', onTap: () {}),
-                _ProfileMenuItem(icon: Icons.settings_outlined, label: 'Settings', onTap: () {}),
+                _ProfileMenuItem(icon: Icons.person_outline_rounded, label: 'แก้ไขโปรไฟล์', onTap: () {}),
+                _ProfileMenuItem(icon: Icons.account_balance_wallet_outlined, label: 'กระเป๋าเงิน', onTap: () {}),
+                _ProfileMenuItem(icon: Icons.bookmark_border_rounded, label: 'สถานที่บันทึก', onTap: () {}),
+                _ProfileMenuItem(icon: Icons.local_offer_outlined, label: 'โปรโมชัน', onTap: () {}),
+                _ProfileMenuItem(icon: Icons.headset_mic_outlined, label: 'ความช่วยเหลือ', onTap: () {}),
+                _ProfileMenuItem(icon: Icons.settings_outlined, label: 'การตั้งค่า', onTap: () {}),
                 const SizedBox(height: 16),
                 _ProfileMenuItem(
                   icon: Icons.logout_rounded,
-                  label: 'Sign Out',
+                  label: 'ออกจากระบบ',
                   color: FairGoTheme.danger,
                   onTap: () {
                     auth.logout();

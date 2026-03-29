@@ -103,9 +103,9 @@ export default function UsersPage() {
   });
 
   return (
-    <div className="bg-background-light min-h-screen">
+    <div className="bg-fairgo-bg min-h-screen">
       {/* Header */}
-      <header className="p-8 pb-0 bg-background-light">
+      <header className="p-8 pb-0 bg-fairgo-bg">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
             <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">User &amp; Driver Management</h2>

@@ -51,7 +51,7 @@ class _MatchingScreenState extends State<MatchingScreen>
         markerId: const MarkerId('pickup'),
         position: LatLng(pickupLat, pickupLng),
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueCyan),
-        infoWindow: InfoWindow(title: 'Pickup', snippet: activeRide['pickupAddress'] ?? ''),
+        infoWindow: InfoWindow(title: 'จุดรับ', snippet: activeRide['pickupAddress'] ?? ''),
       ));
     }
     if (dropoffLat != null && dropoffLng != null) {
@@ -59,7 +59,7 @@ class _MatchingScreenState extends State<MatchingScreen>
         markerId: const MarkerId('dropoff'),
         position: LatLng(dropoffLat, dropoffLng),
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-        infoWindow: InfoWindow(title: 'Drop-off', snippet: activeRide['dropoffAddress'] ?? ''),
+        infoWindow: InfoWindow(title: 'จุดส่ง', snippet: activeRide['dropoffAddress'] ?? ''),
       ));
     }
     return markers;
@@ -177,8 +177,8 @@ class _MatchingScreenState extends State<MatchingScreen>
                                 Expanded(
                                   child: Text(
                                     offers.isEmpty
-                                        ? 'Finding drivers...'
-                                        : '${offers.length} driver${offers.length > 1 ? 's' : ''} found',
+                                        ? 'กำลังค้นหาคนขับ...'
+                                        : 'พบคนขับ ${offers.length} คน',
                                     style: const TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
@@ -273,8 +273,8 @@ class _MatchingScreenState extends State<MatchingScreen>
                                     Expanded(
                                       child: Text(
                                         offers.isEmpty
-                                            ? 'Searching...'
-                                            : '${offers.length} Drivers found',
+                                            ? 'กำลังค้นหา...'
+                                            : 'พบคนขับ ${offers.length} คน',
                                         style: const TextStyle(
                                           fontSize: 18,
                                           fontWeight: FontWeight.bold,
@@ -334,7 +334,7 @@ class _MatchingScreenState extends State<MatchingScreen>
                                         const SizedBox(width: 8),
                                         Expanded(
                                           child: Text(
-                                            'Your offer: ฿${activeRide['fareOffer']}',
+                                            'ราคาที่เสนอ: ฿${activeRide['fareOffer']}',
                                             style: const TextStyle(
                                               fontSize: 13,
                                               fontWeight: FontWeight.w600,
@@ -400,7 +400,7 @@ class _MatchingScreenState extends State<MatchingScreen>
                                         ),
                                         const SizedBox(height: 16),
                                         const Text(
-                                          'Searching for drivers...',
+                                          'กำลังค้นหาคนขับ...',
                                           style: TextStyle(
                                             fontSize: 15,
                                             fontWeight: FontWeight.w600,
@@ -409,7 +409,7 @@ class _MatchingScreenState extends State<MatchingScreen>
                                         ),
                                         const SizedBox(height: 4),
                                         const Text(
-                                          'Nearby drivers will see your request',
+                                          'คนขับบริเวณใกล้เคียงจะเห็นคำขอของคุณ',
                                           textAlign: TextAlign.center,
                                           style: TextStyle(
                                               fontSize: 12,
@@ -534,7 +534,7 @@ class _DriverOfferCard extends StatelessWidget {
                                     size: 13, color: Color(0xFFF59E0B)),
                                 const SizedBox(width: 2),
                                 Text(
-                                  '${driver?['averageRating']?.toStringAsFixed(1) ?? '0.0'} · ${driver?['totalTrips'] ?? 0} trips',
+                                  '${driver?['averageRating']?.toStringAsFixed(1) ?? '0.0'} · ${driver?['totalTrips'] ?? 0} เที่ยว',
                                   style: const TextStyle(
                                       fontSize: 11,
                                       color: FairGoTheme.textSecondary),
@@ -567,7 +567,7 @@ class _DriverOfferCard extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            '${offer['estimatedPickupMinutes']} min away',
+                            'อีก ${offer['estimatedPickupMinutes']} นาที',
                             style: const TextStyle(
                                 fontSize: 11,
                                 color: FairGoTheme.textSecondary),
@@ -609,7 +609,7 @@ class _DriverOfferCard extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(10)),
                             padding: const EdgeInsets.symmetric(vertical: 10),
                           ),
-                          child: const Text('Decline',
+                          child: const Text('ปฏิเสธ',
                               style: TextStyle(fontSize: 13)),
                         ),
                       ),
@@ -625,7 +625,7 @@ class _DriverOfferCard extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(vertical: 10),
                             elevation: 0,
                           ),
-                          child: const Text('Accept',
+                          child: const Text('รับ',
                               style: TextStyle(
                                   fontSize: 13, fontWeight: FontWeight.w600)),
                         ),

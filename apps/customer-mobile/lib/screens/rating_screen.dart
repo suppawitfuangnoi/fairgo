@@ -12,18 +12,18 @@ class RatingScreen extends StatefulWidget {
 
 class _RatingScreenState extends State<RatingScreen> {
   int _stars = 5;
-  final Set<String> _selectedChips = {'Fair price'};
+  final Set<String> _selectedChips = {'ราคาแฟร์'};
   final _commentController = TextEditingController();
   bool _addToFavorites = false;
   bool _submitting = false;
 
   final List<String> _chips = [
-    'Fair price',
-    'Friendly driver',
-    'Clean car',
-    'Safe driving',
-    'Quick route',
-    'Great music',
+    'ราคาแฟร์',
+    'คนขับมีมารยาท',
+    'รถสะอาด',
+    'ขับปลอดภัย',
+    'เส้นทางรวดเร็ว',
+    'เพลงเพราะ',
   ];
 
   @override
@@ -71,7 +71,7 @@ class _RatingScreenState extends State<RatingScreen> {
         backgroundColor: FairGoTheme.primaryCyan,
         elevation: 0,
         title: const Text(
-          'RIDE COMPLETED',
+          'การเดินทางสิ้นสุดแล้ว',
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w800,
@@ -114,7 +114,7 @@ class _RatingScreenState extends State<RatingScreen> {
 
             // "How was your ride?"
             const Text(
-              'How was your ride?',
+              'การเดินทางเป็นอย่างไรบ้าง?',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -226,7 +226,7 @@ class _RatingScreenState extends State<RatingScreen> {
               controller: _commentController,
               maxLines: 3,
               decoration: InputDecoration(
-                hintText: 'Tell us more about your ride...',
+                hintText: 'บอกเพิ่มเติมเกี่ยวกับการเดินทาง...',
                 hintStyle: const TextStyle(
                     fontSize: 13, color: Color(0xFFBDBDBD)),
                 filled: true,
@@ -262,7 +262,7 @@ class _RatingScreenState extends State<RatingScreen> {
                   const SizedBox(width: 10),
                   const Expanded(
                     child: Text(
-                      'Add driver to favorites',
+                      'เพิ่มคนขับเป็นรายการโปรด',
                       style: TextStyle(
                           fontSize: 14, fontWeight: FontWeight.w500),
                     ),
@@ -300,7 +300,7 @@ class _RatingScreenState extends State<RatingScreen> {
                         ),
                       )
                     : const Text(
-                        'Submit Feedback',
+                        'ส่งข้อเสนอแนะ',
                         style: TextStyle(
                             fontSize: 16, fontWeight: FontWeight.bold),
                       ),
@@ -311,7 +311,7 @@ class _RatingScreenState extends State<RatingScreen> {
               onPressed: () => Navigator.pushNamedAndRemoveUntil(
                   context, '/home', (route) => false),
               child: const Text(
-                'Skip for now',
+                'ข้ามไปก่อน',
                 style: TextStyle(color: FairGoTheme.textSecondary),
               ),
             ),

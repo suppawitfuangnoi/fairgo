@@ -19,9 +19,9 @@ class TripSummaryScreen extends StatelessWidget {
     final createdAt = trip?['createdAt']?.toString() ?? '';
     final updatedAt = trip?['updatedAt']?.toString() ?? '';
 
-    // Payment breakdown
-    final baseFare = (lockedFare * 0.85).roundToDouble();
-    final fairDeal = -(lockedFare * 0.1).roundToDouble();
+    // Payment breakdown — lockedFare is the agreed fare (100%)
+    final platformFee = (lockedFare * 0.10).roundToDouble();
+    final driverPayout = (lockedFare - platformFee).roundToDouble();
     final promo = 0.0;
 
     return Scaffold(
@@ -57,7 +57,7 @@ class TripSummaryScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  "You've Arrived!",
+                  'ถึงจุดหมายแล้ว!',
                   style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
@@ -66,7 +66,7 @@ class TripSummaryScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Thank you for riding with FAIRGO',
+                  'ขอบคุณที่ใช้บริการ FAIRGO',
                   style: TextStyle(
                     fontSize: 13,
                     color: Colors.white.withValues(alpha: 0.85),
@@ -84,7 +84,7 @@ class TripSummaryScreen extends StatelessWidget {
                   child: Column(
                     children: [
                       Text(
-                        'Total Paid',
+                        'ชำระแล้ว',
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.white.withValues(alpha: 0.8),
@@ -233,7 +233,7 @@ class TripSummaryScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Payment Breakdown',
+                          'รายละเอียดการชำระ',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
@@ -241,15 +241,12 @@ class TripSummaryScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        _PaymentRow(label: 'Base fare', amount: baseFare),
-                        _PaymentRow(
-                          label: 'Fair Price Deal',
-                          amount: fairDeal,
-                          isDiscount: true,
-                        ),
+                        _PaymentRow(label: 'ค่าโดยสารตกลง', amount: lockedFare),
+                        _PaymentRow(label: 'ส่วนแบ่งแพลตฟอร์ม (10%)', amount: platformFee, isDiscount: false, isSubInfo: true),
+                        _PaymentRow(label: 'คนขับได้รับ (90%)', amount: driverPayout, isDiscount: false, isSubInfo: true),
                         if (promo < 0)
                           _PaymentRow(
-                            label: 'Promo discount',
+                            label: 'ส่วนลดโปรโมชัน',
                             amount: promo,
                             isDiscount: true,
                           ),
@@ -258,7 +255,7 @@ class TripSummaryScreen extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Text(
-                              'Total',
+                              'รวมทั้งหมด',
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.bold,
@@ -296,7 +293,7 @@ class TripSummaryScreen extends StatelessWidget {
                         elevation: 0,
                       ),
                       child: const Text(
-                        'Go Home',
+                        'กลับหน้าหลัก',
                         style: TextStyle(
                             fontSize: 16, fontWeight: FontWeight.bold),
                       ),
@@ -320,7 +317,7 @@ class TripSummaryScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(16)),
                       ),
                       child: const Text(
-                        'Rate Your Driver',
+                        'ให้คะแนนคนขับ',
                         style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                       ),
                     ),
@@ -377,11 +374,13 @@ class _PaymentRow extends StatelessWidget {
   final String label;
   final double amount;
   final bool isDiscount;
+  final bool isSubInfo;
 
   const _PaymentRow({
     required this.label,
     required this.amount,
     this.isDiscount = false,
+    this.isSubInfo = false,
   });
 
   @override
@@ -393,17 +392,23 @@ class _PaymentRow extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(
-                fontSize: 13, color: FairGoTheme.textSecondary),
+            style: TextStyle(
+              fontSize: isSubInfo ? 11 : 13,
+              color: isSubInfo ? const Color(0xFFBDBDBD) : FairGoTheme.textSecondary,
+            ),
           ),
           Text(
             isDiscount
                 ? '-฿${amount.abs().toStringAsFixed(0)}'
                 : '฿${amount.toStringAsFixed(0)}',
             style: TextStyle(
-              fontSize: 13,
+              fontSize: isSubInfo ? 11 : 13,
               fontWeight: FontWeight.w600,
-              color: isDiscount ? FairGoTheme.success : FairGoTheme.textPrimary,
+              color: isDiscount
+                  ? FairGoTheme.success
+                  : isSubInfo
+                      ? const Color(0xFFBDBDBD)
+                      : FairGoTheme.textPrimary,
             ),
           ),
         ],

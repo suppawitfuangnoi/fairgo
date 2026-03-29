@@ -164,10 +164,19 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       // CTA button
                       SizedBox(
                         width: double.infinity,
-                        child: ElevatedButton.icon(
+                        child: ElevatedButton(
                           onPressed: _nextPage,
-                          icon: const SizedBox.shrink(),
-                          label: Row(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: FairGoTheme.primaryCyan,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            elevation: 4,
+                            shadowColor: FairGoTheme.primaryCyan.withValues(alpha: 0.4),
+                          ),
+                          child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
@@ -182,16 +191,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                               const SizedBox(width: 6),
                               const Icon(Icons.arrow_forward_rounded, size: 18),
                             ],
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: FairGoTheme.primaryCyan,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            elevation: 4,
-                            shadowColor: FairGoTheme.primaryCyan.withValues(alpha: 0.4),
                           ),
                         ),
                       ),

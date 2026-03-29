@@ -53,8 +53,7 @@ class _RideRequestScreenState extends State<RideRequestScreen> {
       setState(() {
         _pickupLat = pos.latitude;
         _pickupLng = pos.longitude;
-        _pickupController.text =
-            '${pos.latitude.toStringAsFixed(4)}, ${pos.longitude.toStringAsFixed(4)}';
+        _pickupController.text = 'ตำแหน่งของฉัน';
         _loadingLocation = false;
       });
       _animateMap();

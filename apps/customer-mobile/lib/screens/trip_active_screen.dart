@@ -40,7 +40,7 @@ class _TripActiveScreenState extends State<TripActiveScreen>
             Marker(
               markerId: const MarkerId('driver'),
               position: pos,
-              infoWindow: const InfoWindow(title: 'Driver'),
+              infoWindow: const InfoWindow(title: 'คนขับ'),
               icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
             ),
           };
@@ -107,14 +107,14 @@ class _TripActiveScreenState extends State<TripActiveScreen>
                   Marker(
                     markerId: const MarkerId('pickup'),
                     position: LatLng(pickupLat, pickupLng),
-                    infoWindow: const InfoWindow(title: 'Pickup'),
+                    infoWindow: const InfoWindow(title: 'จุดรับ'),
                     icon: BitmapDescriptor.defaultMarkerWithHue(
                         BitmapDescriptor.hueCyan),
                   ),
                   Marker(
                     markerId: const MarkerId('dropoff'),
                     position: LatLng(dropoffLat, dropoffLng),
-                    infoWindow: const InfoWindow(title: 'Dropoff'),
+                    infoWindow: const InfoWindow(title: 'จุดส่ง'),
                     icon: BitmapDescriptor.defaultMarkerWithHue(
                         BitmapDescriptor.hueRed),
                   ),
@@ -234,7 +234,7 @@ class _TripActiveScreenState extends State<TripActiveScreen>
                               color: Colors.white, size: 16),
                           SizedBox(width: 6),
                           Text(
-                            'Driver is nearby!',
+                            'คนขับมาถึงแล้ว!',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 13,
@@ -396,7 +396,7 @@ class _TripActiveScreenState extends State<TripActiveScreen>
                               onPressed: () {},
                               icon: const Icon(Icons.chat_bubble_rounded,
                                   size: 16),
-                              label: const Text('Chat'),
+                              label: const Text('แชท'),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: FairGoTheme.primaryCyan,
                                 side: BorderSide(
@@ -414,7 +414,7 @@ class _TripActiveScreenState extends State<TripActiveScreen>
                             child: ElevatedButton.icon(
                               onPressed: () {},
                               icon: const Icon(Icons.phone_rounded, size: 16),
-                              label: const Text('Call Driver'),
+                              label: const Text('โทรหาคนขับ'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: FairGoTheme.primaryCyan,
                                 foregroundColor: Colors.white,
@@ -442,15 +442,15 @@ class _TripActiveScreenState extends State<TripActiveScreen>
   String _statusLabel(String status) {
     switch (status) {
       case 'DRIVER_ASSIGNED':
-        return 'Driver assigned · Arriving soon';
+        return 'คนขับได้รับงาน · กำลังมารับ';
       case 'DRIVER_EN_ROUTE':
-        return 'Arriving in ~5 mins';
+        return 'กำลังเดินทางมารับ ~5 นาที';
       case 'DRIVER_ARRIVED':
-        return 'Driver has arrived!';
+        return 'คนขับมาถึงแล้ว!';
       case 'PICKUP_CONFIRMED':
-        return 'Trip started';
+        return 'เริ่มการเดินทาง';
       case 'IN_PROGRESS':
-        return 'On the way to destination';
+        return 'กำลังเดินทางไปจุดหมาย';
       default:
         return status.replaceAll('_', ' ');
     }

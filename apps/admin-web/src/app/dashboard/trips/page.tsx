@@ -71,7 +71,7 @@ export default function TripsPage() {
 
   return (
     // Full-height layout: map fills left, sidebar on right
-    <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-background-light">
+    <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-fairgo-bg">
 
       {/* ── MAP SECTION ── */}
       <section className="flex-1 relative">
@@ -139,7 +139,7 @@ export default function TripsPage() {
           </div>
 
           {/* Status filter pills */}
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+          <div className="flex gap-2 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
             {STATUS_FILTERS.map(s => {
               const count = s === "ALL" ? trips.length : trips.filter(t => t.status === s).length;
               return (
