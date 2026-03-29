@@ -1,9 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { useAdminSocket } from "@/hooks/useSocket";
+
+const LiveMap = dynamic(() => import("@/components/LiveMap"), { ssr: false, loading: () => (
+  <div className="h-56 flex items-center justify-center">
+    <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+  </div>
+) });
 
 interface DashboardStats {
   totalTrips: number; activeTrips: number; totalRevenue: number;
@@ -42,14 +49,6 @@ function Badge({ status }: { status: string }) {
   return <span className={m[status] || "badge-pending"}>{status.replace(/_/g, " ")}</span>;
 }
 
-// Map driver lat/lng (Bangkok area) to approximate pixel position in the map div
-function geoToMapPercent(lat: number, lng: number) {
-  // Bangkok approx bounds: lat 13.5-14.0, lng 100.3-100.9
-  const latMin = 13.5, latMax = 14.0, lngMin = 100.3, lngMax = 100.9;
-  const x = ((lng - lngMin) / (lngMax - lngMin)) * 100;
-  const y = ((latMax - lat) / (latMax - latMin)) * 100;
-  return { x: Math.max(5, Math.min(95, x)), y: Math.max(5, Math.min(95, y)) };
-}
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -68,9 +67,6 @@ export default function DashboardPage() {
 
   const hours = Array.from({ length: 12 }, (_, i) => ({ label: `${(i * 2).toString().padStart(2, "0")}:00`, val: Math.floor(Math.random() * 80 + 10) }));
   const maxH = Math.max(...hours.map(h => h.val));
-
-  // Fallback dots when no socket drivers
-  const fallbackDots = [{ top: "28%", left: "22%" }, { top: "52%", left: "58%" }, { top: "18%", left: "68%" }, { top: "65%", left: "33%" }];
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
@@ -159,30 +155,8 @@ export default function DashboardPage() {
               }
             </span>
           </div>
-          <div className="map-bg h-56 relative overflow-hidden">
-            {/* Real-time driver dots from Socket.IO */}
-            {drivers.length > 0
-              ? drivers.map((driver) => {
-                  const pos = geoToMapPercent(driver.lat, driver.lng);
-                  return (
-                    <div
-                      key={driver.userId}
-                      className="absolute w-8 h-8 bg-primary rounded-full flex items-center justify-center shadow-lg border-2 border-white transition-all duration-1000"
-                      style={{ top: `${pos.y}%`, left: `${pos.x}%`, transform: "translate(-50%, -50%)" }}
-                      title={`Driver: ${driver.driverId}`}
-                    >
-                      <span className="material-icons-round text-white text-sm">{VI[driver.vehicleType || "TAXI"] || "local_taxi"}</span>
-                    </div>
-                  );
-                })
-              : fallbackDots.map((pos, i) => (
-                  <div key={i} className="absolute w-8 h-8 bg-primary rounded-full flex items-center justify-center shadow-lg border-2 border-white animate-bounce" style={{ top: pos.top, left: pos.left, animationDelay: `${i * 0.4}s`, animationDuration: "2.5s" }}>
-                    <span className="material-icons-round text-white text-sm">local_taxi</span>
-                  </div>
-                ))
-            }
-            <div className="absolute top-1/2 left-0 right-0 h-px bg-white/40" />
-            <div className="absolute top-0 bottom-0 left-1/2 w-px bg-white/40" />
+          <div className="h-56 overflow-hidden">
+            <LiveMap drivers={drivers} height="224px" />
           </div>
         </div>
         <div className="lg:col-span-2 bg-white rounded-2xl shadow-card overflow-hidden flex flex-col">
