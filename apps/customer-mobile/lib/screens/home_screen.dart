@@ -91,7 +91,7 @@ class _HomeTabState extends State<_HomeTab> {
   }
 
   Future<void> _initLocation() async {
-    final loc = await LocationService().getCurrentLocation();
+    final loc = await LocationService().getCurrentPosition();
     if (loc != null && mounted) {
       setState(() {
         _currentLocation = LatLng(loc.latitude, loc.longitude);

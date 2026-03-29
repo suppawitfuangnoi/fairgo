@@ -50,7 +50,7 @@ class _RideRequestScreenState extends State<RideRequestScreen> {
 
   Future<void> _initLocation() async {
     final t = Provider.of<LocaleProvider>(context, listen: false).t;
-    final pos = await LocationService().getCurrentLocation();
+    final pos = await LocationService().getCurrentPosition();
     if (pos != null && mounted) {
       setState(() {
         _pickupLat = pos.latitude;
