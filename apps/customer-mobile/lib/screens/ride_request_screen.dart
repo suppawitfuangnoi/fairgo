@@ -50,7 +50,7 @@ class _RideRequestScreenState extends State<RideRequestScreen> {
 
   Future<void> _initLocation() async {
     final t = Provider.of<LocaleProvider>(context, listen: false).t;
-    final pos = await LocationService.instance.getCurrentLocation();
+    final pos = await LocationService().getCurrentLocation();
     if (pos != null && mounted) {
       setState(() {
         _pickupLat = pos.latitude;
@@ -589,7 +589,7 @@ class _RideRequestScreenState extends State<RideRequestScreen> {
                                       color: FairGoTheme.textSecondary),
                                 ),
                                 const SizedBox(width: 4),
-                                ...[-10, +10, +20, +50].map((delta) {
+                                ...[-10, 10, 20, 50].map((delta) {
                                   return Padding(
                                     padding:
                                         const EdgeInsets.only(right: 6),

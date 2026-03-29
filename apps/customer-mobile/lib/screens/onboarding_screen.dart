@@ -37,8 +37,10 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     super.dispose();
   }
 
+  static const int _pageCount = 3;
+
   void _nextPage() {
-    if (_currentPage < _pages.length - 1) {
+    if (_currentPage < _pageCount - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOut,

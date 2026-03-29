@@ -5,6 +5,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../config/theme.dart';
 import '../providers/ride_provider.dart';
 import '../providers/locale_provider.dart';
+import '../l10n/app_translations.dart';
 import '../services/socket_service.dart';
 
 class TripActiveScreen extends StatefulWidget {

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../config/theme.dart';
 import '../providers/ride_provider.dart';
 import '../providers/locale_provider.dart';
+import '../l10n/app_translations.dart';
 
 class RatingScreen extends StatefulWidget {
   const RatingScreen({super.key});
