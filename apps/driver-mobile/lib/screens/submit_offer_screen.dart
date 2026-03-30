@@ -83,7 +83,9 @@ class _SubmitOfferScreenState extends State<SubmitOfferScreen> {
   @override
   void dispose() {
     _messageController.dispose();
-    _mapController?.dispose();
+    try {
+      _mapController?.dispose();
+    } catch (_) {}
     super.dispose();
   }
 
@@ -93,7 +95,7 @@ class _SubmitOfferScreenState extends State<SubmitOfferScreen> {
 
     final jobs = Provider.of<JobProvider>(context, listen: false);
     final success = await jobs.submitOffer(
-      rideRequestId: ride['id'],
+      rideRequestId: ride['id'].toString(),
       fareAmount: _offerAmount,
       estimatedPickupMinutes: _etaMinutes,
       message: _messageController.text.isNotEmpty ? _messageController.text : null,

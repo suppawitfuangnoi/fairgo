@@ -44,7 +44,9 @@ class _RideRequestScreenState extends State<RideRequestScreen> {
   void dispose() {
     _pickupController.dispose();
     _dropoffController.dispose();
-    _mapController?.dispose();
+    try {
+      _mapController?.dispose();
+    } catch (_) {}
     super.dispose();
   }
 
@@ -678,7 +680,7 @@ class _RideRequestScreenState extends State<RideRequestScreen> {
                             SizedBox(
                               width: double.infinity,
                               child: ElevatedButton(
-                                onPressed: ride.isLoading
+                                onPressed: (ride.isLoading || _loadingLocation)
                                     ? null
                                     : _submitRequest,
                                 style: ElevatedButton.styleFrom(

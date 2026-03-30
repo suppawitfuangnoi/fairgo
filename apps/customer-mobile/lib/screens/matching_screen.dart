@@ -37,7 +37,9 @@ class _MatchingScreenState extends State<MatchingScreen>
   void dispose() {
     _pollTimer?.cancel();
     _pulseController.dispose();
-    _mapController?.dispose();
+    try {
+      _mapController?.dispose();
+    } catch (_) {}
     super.dispose();
   }
 
@@ -435,9 +437,9 @@ class _MatchingScreenState extends State<MatchingScreen>
                                       isBestMatch: isBest,
                                       t: t,
                                       onAccept: () =>
-                                          _acceptOffer(offer['id']),
+                                          _acceptOffer(offer['id'].toString()),
                                       onDecline: () =>
-                                          _rejectOffer(offer['id']),
+                                          _rejectOffer(offer['id'].toString()),
                                     );
                                   }),
                                   const SizedBox(height: 8),

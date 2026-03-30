@@ -105,7 +105,9 @@ class _HomeTabState extends State<_HomeTab> {
 
   @override
   void dispose() {
-    _mapController?.dispose();
+    try {
+      _mapController?.dispose();
+    } catch (_) {}
     super.dispose();
   }
 

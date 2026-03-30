@@ -62,7 +62,9 @@ class _TripActiveScreenState extends State<TripActiveScreen>
     _pollTimer?.cancel();
     _pulseController.dispose();
     SocketService().off('trip:driver:location');
-    _mapController?.dispose();
+    try {
+      _mapController?.dispose();
+    } catch (_) {}
     super.dispose();
   }
 
