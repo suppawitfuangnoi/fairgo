@@ -74,26 +74,44 @@ class _RatingScreenState extends State<RatingScreen> {
     final duration = trip?['estimatedDuration']?.toString() ?? '0';
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F8F8),
-      appBar: AppBar(
-        backgroundColor: FairGoTheme.primaryCyan,
-        elevation: 0,
-        title: Text(
-          t.ratingAppBarTitle,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 2,
-            color: Colors.white,
-          ),
-        ),
-        centerTitle: true,
-        automaticallyImplyLeading: false,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
         child: Column(
           children: [
+            // Top header row
+            Row(
+              children: [
+                GestureDetector(
+                  onTap: () => Navigator.pushNamedAndRemoveUntil(
+                      context, '/home', (route) => false),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF6F8F8),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Icon(Icons.close_rounded,
+                        size: 22, color: Color(0xFF9CA3AF)),
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  t.ratingAppBarTitle,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 2,
+                    color: FairGoTheme.primaryCyan,
+                  ),
+                ),
+                const Spacer(),
+                const SizedBox(width: 40),
+              ],
+            ),
+            const SizedBox(height: 20),
+
             // Driver avatar with gradient border
             Container(
               width: 90,
@@ -327,6 +345,7 @@ class _RatingScreenState extends State<RatingScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

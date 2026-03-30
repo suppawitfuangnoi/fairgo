@@ -114,7 +114,7 @@ class _JobListTabState extends State<_JobListTab>
   }
 
   Future<void> _initLocation() async {
-    final pos = await LocationService.instance.getCurrentLocation();
+    final pos = await LocationService().getCurrentPosition();
     if (pos != null && mounted) {
       setState(() => _driverLocation = LatLng(pos.latitude, pos.longitude));
       _mapController?.animateCamera(
@@ -448,6 +448,7 @@ class _JobCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.watch<LocaleProvider>().t;
     final customerProfile = ride['customerProfile'];
     final customer = customerProfile?['user'];
     final customerName = customer?['name']?.toString() ?? 'Passenger';
@@ -667,7 +668,7 @@ class _JobCard extends StatelessWidget {
                             tapTargetSize:
                                 MaterialTapTargetSize.shrinkWrap,
                           ),
-                          child: Text('Reject',
+                          child: Text(t.jobSkip,
                               style: const TextStyle(fontSize: 12)),
                         ),
                         const SizedBox(width: 8),
@@ -889,6 +890,14 @@ class _EarningsTab extends StatefulWidget {
 
 class _EarningsTabState extends State<_EarningsTab> {
   bool _isWeekly = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<JobProvider>(context, listen: false).loadTripHistory();
+    });
+  }
 
   final List<_EarningsDay> _weeklyData = [
     _EarningsDay('Mon', 0.45),
@@ -1203,6 +1212,157 @@ class _EarningsTabState extends State<_EarningsTab> {
                             ),
                           ],
                         ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // ── Recent Trips ──
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            t.earningsRecentTrips,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: FairGoTheme.textPrimary,
+                            ),
+                          ),
+                          Text(
+                            t.earningsViewAll,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: FairGoTheme.primaryCyan,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Consumer<JobProvider>(
+                        builder: (context, jobs, _) {
+                          final trips = jobs.tripHistory.take(5).toList();
+                          if (trips.isEmpty) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(vertical: 24),
+                              alignment: Alignment.center,
+                              child: Text(
+                                t.earningsNoTripsYet,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: FairGoTheme.textSecondary,
+                                ),
+                              ),
+                            );
+                          }
+                          return Column(
+                            children: trips.map((trip) {
+                              final vehicleType = trip['vehicleType'] ?? 'TAXI';
+                              final vehicleIcons = {
+                                'TAXI': Icons.local_taxi_rounded,
+                                'MOTORCYCLE': Icons.two_wheeler_rounded,
+                                'TUKTUK': Icons.electric_rickshaw_rounded,
+                              };
+                              final vehicleBg = {
+                                'TAXI': const Color(0xFFFFF8E1),
+                                'MOTORCYCLE': const Color(0xFFE3F2FD),
+                                'TUKTUK': const Color(0xFFFCE4EC),
+                              };
+                              final vehicleColor = {
+                                'TAXI': const Color(0xFFF57C00),
+                                'MOTORCYCLE': const Color(0xFF1565C0),
+                                'TUKTUK': const Color(0xFFC62828),
+                              };
+                              final fare = (trip['lockedFare'] as num?)?.toDouble() ?? 0;
+                              final distance = trip['estimatedDistance']?.toStringAsFixed(1) ?? '0';
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 10),
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(14),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.03),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 42,
+                                      height: 42,
+                                      decoration: BoxDecoration(
+                                        color: vehicleBg[vehicleType] ?? const Color(0xFFF0FBFE),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Icon(
+                                        vehicleIcons[vehicleType] ?? Icons.directions_car_rounded,
+                                        color: vehicleColor[vehicleType] ?? FairGoTheme.primaryCyan,
+                                        size: 22,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            '${trip['pickupAddress'] ?? ''} → ${trip['dropoffAddress'] ?? ''}',
+                                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 3),
+                                          Row(
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                decoration: BoxDecoration(
+                                                  color: FairGoTheme.success.withValues(alpha: 0.1),
+                                                  borderRadius: BorderRadius.circular(6),
+                                                ),
+                                                child: Text(
+                                                  'Paid',
+                                                  style: TextStyle(
+                                                    fontSize: 9,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: FairGoTheme.success,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          '+฿${fare.toStringAsFixed(0)}',
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: FairGoTheme.primaryCyan,
+                                          ),
+                                        ),
+                                        Text(
+                                          '$distance km',
+                                          style: const TextStyle(
+                                            fontSize: 10,
+                                            color: FairGoTheme.textSecondary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          );
+                        },
                       ),
                       const SizedBox(height: 20),
                     ],

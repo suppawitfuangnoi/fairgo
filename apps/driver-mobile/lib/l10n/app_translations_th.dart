@@ -57,6 +57,7 @@ class AppTranslationsTh implements AppTranslations {
   @override String jobDuration(String min) => '~$min นาที';
   @override String get jobViewDetails => 'ดูรายละเอียด';
   @override String get jobSubmitOffer => 'เสนอราคา';
+  @override String get jobSkip => 'ข้าม';
   @override String get jobYouMarker => 'คุณ';
   @override String get jobPickupMarker => 'จุดรับ';
 
@@ -75,6 +76,9 @@ class AppTranslationsTh implements AppTranslations {
   @override String get earningsAvgLabel => 'เฉลี่ยต่อเที่ยว';
   @override String get earningsThisWeek => 'สัปดาห์นี้';
   @override String get earningsEmpty => 'ยังไม่มีข้อมูลรายได้';
+  @override String get earningsRecentTrips => 'การเดินทางล่าสุด';
+  @override String get earningsViewAll => 'ดูทั้งหมด';
+  @override String get earningsNoTripsYet => 'ยังไม่มีการเดินทาง';
 
   // ─── PROFILE TAB ───
   @override String get profileTitle => 'โปรไฟล์คนขับ';

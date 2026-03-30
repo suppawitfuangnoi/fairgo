@@ -79,6 +79,20 @@ export default function DriversPage() {
     } catch (e) { console.error(e); } finally { setProcessing(false); }
   };
 
+  const blockDriver = async (driver: DriverProfile) => {
+    const isSuspended = driver.user.status === "SUSPENDED";
+    const action = isSuspended ? "Reactivate" : "Block";
+    const newStatus = isSuspended ? "ACTIVE" : "SUSPENDED";
+    if (!confirm(`${action} ${driver.user.name}?`)) return;
+    setProcessing(true);
+    try {
+      const token = getToken(); if (!token) return;
+      await apiFetch(`/api/v1/admin/users/${driver.user.id}`, { token, method: "PATCH", body: { status: newStatus } });
+      setDrivers(prev => prev.map(d => d.id === driver.id ? { ...d, user: { ...d.user, status: newStatus } } : d));
+      if (selected?.id === driver.id) setSelected(prev => prev ? { ...prev, user: { ...prev.user, status: newStatus } } : null);
+    } catch (e) { console.error(e); } finally { setProcessing(false); }
+  };
+
   const pendingCount = drivers.filter(d => d.verificationStatus === "PENDING").length;
 
   return (
@@ -258,11 +272,16 @@ export default function DriversPage() {
                             <button onClick={() => setSelected(d)} className="p-1.5 text-slate-400 hover:text-primary transition" title="View">
                               <span className="material-symbols-outlined text-xl">visibility</span>
                             </button>
-                            <button className="p-1.5 text-slate-400 hover:text-primary transition" title="Edit">
+                            <button onClick={() => setSelected(d)} className="p-1.5 text-slate-400 hover:text-primary transition" title="Edit">
                               <span className="material-symbols-outlined text-xl">edit</span>
                             </button>
-                            <button className="p-1.5 text-slate-400 hover:text-red-500 transition" title="Block">
-                              <span className="material-symbols-outlined text-xl">block</span>
+                            <button
+                              onClick={() => blockDriver(d)}
+                              disabled={processing}
+                              className={`p-1.5 transition disabled:opacity-50 ${d.user.status === "SUSPENDED" ? "text-emerald-400 hover:text-emerald-600" : "text-slate-400 hover:text-red-500"}`}
+                              title={d.user.status === "SUSPENDED" ? "Reactivate" : "Block"}
+                            >
+                              <span className="material-symbols-outlined text-xl">{d.user.status === "SUSPENDED" ? "check_circle" : "block"}</span>
                             </button>
                           </div>
                         )}
@@ -371,7 +390,7 @@ export default function DriversPage() {
             )}
 
             {/* Action buttons */}
-            {selected.verificationStatus === "PENDING" && (
+            {selected.verificationStatus === "PENDING" ? (
               <div className="flex gap-3">
                 <button
                   onClick={() => verifyDriver(selected.id, "APPROVED")}
@@ -386,6 +405,29 @@ export default function DriversPage() {
                   className="flex-1 bg-red-50 text-red-500 border border-red-200 rounded-xl py-3 font-bold text-sm hover:bg-red-100 transition disabled:opacity-50"
                 >
                   {processing ? "..." : `✕ ${t.driversReject}`}
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-3 mt-2">
+                {selected.user.status === "SUSPENDED" ? (
+                  <button
+                    onClick={() => blockDriver(selected)}
+                    disabled={processing}
+                    className="flex-1 bg-emerald-600 text-white rounded-xl py-2.5 font-bold text-sm hover:bg-emerald-700 transition disabled:opacity-50"
+                  >
+                    {processing ? "Processing…" : "Reactivate Driver"}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => blockDriver(selected)}
+                    disabled={processing}
+                    className="flex-1 bg-red-50 text-red-500 border border-red-200 rounded-xl py-2.5 font-bold text-sm hover:bg-red-100 transition disabled:opacity-50"
+                  >
+                    {processing ? "Processing…" : "Block Driver"}
+                  </button>
+                )}
+                <button onClick={() => setSelected(null)} className="px-5 border border-slate-200 text-slate-500 rounded-xl py-2.5 text-sm font-medium hover:bg-slate-50 transition">
+                  Close
                 </button>
               </div>
             )}

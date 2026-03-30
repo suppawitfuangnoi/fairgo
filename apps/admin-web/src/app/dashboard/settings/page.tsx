@@ -1,15 +1,45 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLang } from "@/lib/lang-context";
+
+const STORAGE_KEY = "fairgo-admin-settings";
 
 export default function SettingsPage() {
   const [notifications, setNotifications] = useState({ newDriver: true, tripComplete: true, dispute: true, revenue: false });
   const [commission, setCommission] = useState(15);
   const [matchTimeout, setMatchTimeout] = useState(5);
+  const [savedMsg, setSavedMsg] = useState(false);
   const { t } = useLang();
+
+  // Load settings from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const s = JSON.parse(stored);
+        if (s.commission !== undefined) setCommission(s.commission);
+        if (s.matchTimeout !== undefined) setMatchTimeout(s.matchTimeout);
+        if (s.notifications !== undefined) setNotifications(s.notifications);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  const save = () => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ commission, matchTimeout, notifications }));
+    } catch { /* ignore */ }
+    setSavedMsg(true);
+    setTimeout(() => setSavedMsg(false), 3000);
+  };
 
   return (
     <div className="p-6 space-y-5 max-w-3xl mx-auto">
+      {savedMsg && (
+        <div className="fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-5 py-3 rounded-xl text-white shadow-xl text-sm font-semibold bg-emerald-600">
+          <span className="material-icons-round text-xl">check_circle</span>
+          Settings saved successfully!
+        </div>
+      )}
       <div><h1 className="text-xl font-bold text-fairgo-dark">{t.settingsSystemSettings}</h1><p className="text-sm text-gray-400">{t.settingsPlatformConfig}</p></div>
 
       {/* Platform Config */}
@@ -66,7 +96,10 @@ export default function SettingsPage() {
 
       {/* Save */}
       <div className="flex justify-end">
-        <button className="flex items-center gap-2 bg-primary text-white font-semibold px-6 py-2.5 rounded-xl hover:bg-primary-600 transition shadow-sm">
+        <button
+          onClick={save}
+          className="flex items-center gap-2 bg-primary text-white font-semibold px-6 py-2.5 rounded-xl hover:bg-primary-600 transition shadow-sm"
+        >
           <span className="material-icons-round text-base">save</span>{t.settingsSaveSettings}
         </button>
       </div>

@@ -35,6 +35,7 @@ class ApiService {
   }
 
   bool get isLoggedIn => _accessToken != null;
+  String? get accessToken => _accessToken;
 
   Map<String, String> get _headers => {
         'Content-Type': 'application/json',

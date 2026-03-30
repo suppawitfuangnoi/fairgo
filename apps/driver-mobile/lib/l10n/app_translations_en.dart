@@ -57,6 +57,7 @@ class AppTranslationsEn implements AppTranslations {
   @override String jobDuration(String min) => '~$min min';
   @override String get jobViewDetails => 'View Details';
   @override String get jobSubmitOffer => 'Submit Offer';
+  @override String get jobSkip => 'Skip';
   @override String get jobYouMarker => 'You';
   @override String get jobPickupMarker => 'Pickup';
 
@@ -75,6 +76,9 @@ class AppTranslationsEn implements AppTranslations {
   @override String get earningsAvgLabel => 'Avg. per Trip';
   @override String get earningsThisWeek => 'This Week';
   @override String get earningsEmpty => 'No earnings data yet';
+  @override String get earningsRecentTrips => 'Recent Trips';
+  @override String get earningsViewAll => 'View All';
+  @override String get earningsNoTripsYet => 'No trips completed yet';
 
   // ─── PROFILE TAB ───
   @override String get profileTitle => 'Driver Profile';

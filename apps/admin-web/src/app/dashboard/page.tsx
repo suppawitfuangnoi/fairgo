@@ -105,6 +105,30 @@ export default function DashboardPage() {
 
   const fmt = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}k` : n.toString();
 
+  const exportCSV = () => {
+    const rows = [
+      ["Trip ID", "Passenger", "Driver", "Pickup", "Dropoff", "Fare (฿)", "Status", "Time"],
+      ...trips.map(tr => [
+        tr.id.substring(0, 8),
+        tr.rideRequest?.customerProfile?.user?.name || "N/A",
+        tr.driverProfile?.user?.name || "N/A",
+        tr.rideRequest?.pickupAddress || "N/A",
+        tr.rideRequest?.dropoffAddress || "N/A",
+        tr.lockedFare?.toFixed(2) || "0",
+        tr.status,
+        tr.createdAt ? new Date(tr.createdAt).toLocaleString("th-TH") : "N/A",
+      ]),
+    ];
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `fairgo-trips-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="p-8 space-y-8 max-w-screen-xl mx-auto">
       {/* Header */}
@@ -164,7 +188,9 @@ export default function DashboardPage() {
             <p className="text-sm text-slate-500">Performance insights over the last 7 days</p>
           </div>
           <div className="flex gap-2">
-            <button className="px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-200 hover:bg-slate-50">Export CSV</button>
+            <button onClick={exportCSV} className="px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-200 hover:bg-slate-50 flex items-center gap-1">
+              <span className="material-symbols-outlined text-sm">download</span>Export CSV
+            </button>
             {["Daily", "Weekly"].map(p => (
               <button
                 key={p}

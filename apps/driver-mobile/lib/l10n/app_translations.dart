@@ -60,8 +60,9 @@ abstract class AppTranslations {
   String get jobDropoffLabel;
   String jobDistance(String km);
   String jobDuration(String min);
-  String jobViewDetails;
+  String get jobViewDetails;
   String get jobSubmitOffer;
+  String get jobSkip;
   String get jobYouMarker;
   String get jobPickupMarker;
 
@@ -80,6 +81,9 @@ abstract class AppTranslations {
   String get earningsAvgLabel;
   String get earningsThisWeek;
   String get earningsEmpty;
+  String get earningsRecentTrips;
+  String get earningsViewAll;
+  String get earningsNoTripsYet;
 
   // ─── PROFILE TAB ───
   String get profileTitle;

@@ -144,13 +144,14 @@ class _TripActiveScreenState extends State<TripActiveScreen>
                         Expanded(
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 10),
+                                horizontal: 12, vertical: 10),
                             decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(30),
+                              color: Colors.white.withValues(alpha: 0.92),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: const Color(0xFFF0F0F0)),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.12),
+                                  color: Colors.black.withValues(alpha: 0.08),
                                   blurRadius: 16,
                                   offset: const Offset(0, 4),
                                 ),
@@ -158,27 +159,39 @@ class _TripActiveScreenState extends State<TripActiveScreen>
                             ),
                             child: Row(
                               children: [
-                                AnimatedBuilder(
-                                  animation: _pulseController,
-                                  builder: (ctx, _) => Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: BoxDecoration(
-                                      color: FairGoTheme.primaryCyan
-                                          .withValues(alpha: _pulseController.value),
-                                      shape: BoxShape.circle,
-                                    ),
+                                Container(
+                                  width: 38,
+                                  height: 38,
+                                  decoration: BoxDecoration(
+                                    color: FairGoTheme.primaryCyan.withValues(alpha: 0.1),
+                                    shape: BoxShape.circle,
                                   ),
+                                  child: const Icon(Icons.near_me_rounded,
+                                      color: FairGoTheme.primaryCyan, size: 20),
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 10),
                                 Expanded(
-                                  child: Text(
-                                    _statusLabel(status, t),
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: FairGoTheme.textPrimary,
-                                    ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Status',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w500,
+                                          color: FairGoTheme.textSecondary,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                      Text(
+                                        _statusLabel(status, t),
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                          color: FairGoTheme.textPrimary,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],

@@ -581,55 +581,86 @@ class _RideRequestScreenState extends State<RideRequestScreen> {
 
                             // Quick adjust buttons
                             Row(
-                              children: [
-                                Text(
-                                  localeProvider.isThai ? 'ปรับราคา: ' : 'Quick adjust: ',
-                                  style: const TextStyle(
-                                      fontSize: 12,
-                                      color: FairGoTheme.textSecondary),
-                                ),
-                                const SizedBox(width: 4),
-                                ...[-10, 10, 20, 50].map((delta) {
-                                  return Padding(
-                                    padding:
-                                        const EdgeInsets.only(right: 6),
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          _fareOffer =
-                                              (_fareOffer + delta).clamp(
-                                                  fareMin, fareMax);
-                                        });
-                                      },
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 10, vertical: 6),
-                                        decoration: BoxDecoration(
-                                          color: delta > 0
-                                              ? FairGoTheme.primaryCyan
-                                                  .withValues(alpha: 0.1)
-                                              : FairGoTheme.danger
-                                                  .withValues(alpha: 0.08),
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                        ),
-                                        child: Text(
-                                          '${delta > 0 ? '+' : ''}$delta',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w700,
-                                            color: delta > 0
-                                                ? FairGoTheme.primaryCyan
-                                                : FairGoTheme.danger,
-                                          ),
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [10, 20, 50].map((delta) {
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _fareOffer = (_fareOffer + delta).clamp(fareMin, fareMax);
+                                      });
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF6F8F8),
+                                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Text(
+                                        '+$delta',
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                          color: FairGoTheme.textPrimary,
                                         ),
                                       ),
                                     ),
-                                  );
-                                }),
-                              ],
+                                  ),
+                                );
+                              }).toList(),
                             ),
-                            const SizedBox(height: 24),
+                            const SizedBox(height: 20),
+
+                            // Payment + Est Time row
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF6F8F8),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: const Color(0xFFE8ECEE)),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.payments_rounded,
+                                      color: FairGoTheme.textSecondary, size: 20),
+                                  const SizedBox(width: 8),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        localeProvider.isThai ? 'ชำระเงิน' : 'Payment',
+                                        style: const TextStyle(fontSize: 10, color: FairGoTheme.textSecondary),
+                                      ),
+                                      Text(
+                                        localeProvider.isThai ? 'เงินสด' : 'Cash',
+                                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: FairGoTheme.textPrimary),
+                                      ),
+                                    ],
+                                  ),
+                                  const Spacer(),
+                                  Container(width: 1, height: 30, color: const Color(0xFFE0E0E0)),
+                                  const Spacer(),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Text(
+                                        localeProvider.isThai ? 'เวลาโดยประมาณ' : 'Est. Time',
+                                        style: const TextStyle(fontSize: 10, color: FairGoTheme.textSecondary),
+                                      ),
+                                      Text(
+                                        estimate != null
+                                            ? '${(estimate['estimatedDuration'] as num?)?.toStringAsFixed(0) ?? '?'} min'
+                                            : '5-8 min',
+                                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: FairGoTheme.textPrimary),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 16),
 
                             // Error
                             if (ride.error != null)
